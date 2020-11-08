@@ -16,6 +16,17 @@
 <hr>
 
 {%- if server_path == '' %}
+    <h2>Custom files</h2>
+    <hr>
+
+    <ul>
+        {%- for file in custom_files %}
+            <li><a href="{{file.path}}">{{file.name}}</a></li>
+        {%- endfor %}
+        </ul>
+    <hr>
+
+
     <h2>Shells</h2>
     <hr>
 

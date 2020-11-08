@@ -144,21 +144,23 @@ def serve_file(server_path = ""):
                 name=file.name
             )
         )
-    if server_path == "":
-        for file in server_files.keys():
-            files.append(
-                File(
-                    path=file,
-                    name=Path(file).name
-                )
-            )
     files.sort(key=lambda file: file.name)
+    custom_files = []
+    for file in server_files.keys():
+        custom_files.append(
+            File(
+                path=file,
+                name=Path(file).name
+            )
+        )
+    custom_files.sort(key=lambda file: file.name)
     return render_template(
         "index.html",
         valid_shell_types=TEMPLATE_NAMES,
         default_lhost=get_default_lhost(),
         default_lport=get_default_lport(),
         files=files,
+        custom_files=custom_files,
         server_path=server_path
     )
 
