@@ -35,12 +35,12 @@ def cli():
 @click.option(
     "-p",
     "--port",
-    default=80,
     type=click.INT,
+    required=True,
     callback=validate_port_permissions,
     help="the port to serve from",
 )
-@click.argument("root_folder", required=False, callback=validate_root_folder)
+@click.argument("root_folder", required=True, callback=validate_root_folder)
 def serve(verbose, host, port, debug, root_folder):
     server.serve(
         host=host, port=port, verbose=verbose, root_folder=root_folder, debug=debug
