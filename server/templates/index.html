@@ -1,28 +1,31 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN"><html>
-<title>Shells</title>
+<title>Toolbox</title>
+<head>
+    <link href="data:image/x-icon;base64,x" rel="icon" type="image/x-icon" />
+</head>
 <body>
 
 <h2>Files</h2>
 <hr>
 
 <ul>
-{% for valid_shell_type in valid_shell_types %}
-    <li><a href="/shells/{{valid_shell_type}}">{{valid_shell_type}}</a></li>
-{% endfor %}
+{%- for file in server_files %}
+    <li><a href="{{file['server_path']}}">{{file['server_path']}}</a></li>
+{%- endfor %}
 </ul>
 <hr>
 
 <h2>Shells</h2>
 <hr>
 
-{% for valid_shell_type in valid_shell_types %}
+{%- for valid_shell_type in valid_shell_types %}
     <h3>{{ valid_shell_type }}</h3>
     <ul>
         <li><a href="/shells/{{valid_shell_type}}">/shells/{{valid_shell_type}}</a> - running on default host/port {{default_lhost}} {{default_lport}}</li>
         <li><a href="/shells/{{valid_shell_type}}/{{default_lport}}">/shells/{{valid_shell_type}}/4445</a> - custom port</a></li>
         <li><a href="/shells/{{valid_shell_type}}/{{default_lhost}}/{{default_lport}}">/shells/{{valid_shell_type}}/{{default_lhost}}/{{default_lport}}</a> - custom host and port</li>
     </ul>
-{% endfor %}
+{%- endfor %}
 <hr>
 </body>
 </html>

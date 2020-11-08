@@ -1,0 +1,10 @@
+[
+    {
+        "server_path": "/linpeas.sh",
+        "local_path": "privilege-escalation-awesome-scripts-suite/linPEAS/linpeas.sh"
+    },
+    {
+        "server_path": "/winpeas.bat",
+        "local_path": "privilege-escalation-awesome-scripts-suite/winPEAS/winPEASbat/winPEAS.bat"
+    }
+]

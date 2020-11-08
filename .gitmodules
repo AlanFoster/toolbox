@@ -1,0 +1,3 @@
+[submodule "privilege-escalation-awesome-scripts-suite"]
+	path = privilege-escalation-awesome-scripts-suite
+	url = https://github.com/carlospolop/privilege-escalation-awesome-scripts-suite.git

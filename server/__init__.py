@@ -6,11 +6,35 @@ from http import HTTPStatus
 import ipaddress
 import socket
 import netifaces
+import json
+from pathlib import Path
 
-server = Blueprint("serve", __name__, template_folder="./templates")
-
-VALID_SHELL_TYPES = ["py", "sh", "php", "js"]
+ROOT_DIRECTORY = Path(__file__).parent.parent
+TEMPLATE_DIRECTORY = Path(__file__).parent / "templates"
+TEMPLATE_NAMES = [template.name for template in Path(TEMPLATE_DIRECTORY).iterdir()]
 VALID_INTERFACES = ["lo0", "tun0"]
+
+server = Blueprint("serve", __name__, template_folder=TEMPLATE_DIRECTORY)
+
+server_files = {}
+config_path = Path(__file__).parent / "config.json"
+with open(config_path) as config_file:
+    config = json.load(config_file)
+    for config_value in config:
+        server_path = config_value["server_path"]
+        local_path = config_value["local_path"]
+        if server_path in server_files:
+            raise ValueError(
+                f"Duplicate server_path '{server_path}' for local_path '{local_path}'"
+            )
+        local_path = ROOT_DIRECTORY / local_path
+        if not local_path.is_file():
+            raise ValueError(f"local_path '{local_path}' is not a valid file.")
+
+        server_files[server_path] = {
+            "server_path": server_path,
+            "local_path": local_path,
+        }
 
 
 @dataclass
@@ -69,26 +93,40 @@ def get_datastore(lhost: Optional[str], lport: Optional[str]) -> DataStore:
     )
 
 
+@server.route("/")
 @server.route("/", methods=["GET"])
 @server.route("/shells", methods=["GET"])
 def index():
     return render_template(
         "index.html",
-        valid_shell_types=VALID_SHELL_TYPES,
+        valid_shell_types=TEMPLATE_NAMES,
         default_lhost=get_default_lhost(),
         default_lport=get_default_lport(),
+        server_files=server_files.values(),
     )
 
 
-@server.route("/shells/<shell_type>")
-@server.route("/shells/<shell_type>/<lport>")
-@server.route("/shells/<shell_type>/<lhost>/<lport>")
-def shell(shell_type, lhost=None, lport=None):
-    if shell_type not in VALID_SHELL_TYPES:
-        abort(HTTPStatus.IM_A_TEAPOT, description="Shell type not supported")
-    template_name = f"shell.{shell_type}"
+@server.route("/shells/<template_name>")
+@server.route("/shells/<template_name>/<lport>")
+@server.route("/shells/<template_name>/<lhost>/<lport>")
+def shell(template_name, lhost=None, lport=None):
+    if template_name not in TEMPLATE_NAMES:
+        return abort(HTTPStatus.IM_A_TEAPOT, description="Shell type not supported")
     payload = render_template(template_name, datastore=get_datastore(lhost, lport))
     response = make_response(payload)
+    response.headers["Content-Type"] = "text/plain"
+    return response
+
+
+@server.route("/<server_path>")
+def serve_file(server_path):
+    config_value = server_files.get("/" + server_path, None)
+    if config_value is None:
+        return abort(HTTPStatus.NOT_FOUND, description="file not found")
+    local_path = config_value["local_path"]
+    with open(local_path, "r") as file:
+        content = file.read()
+    response = make_response(content)
     response.headers["Content-Type"] = "text/plain"
     return response
 
