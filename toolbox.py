@@ -11,10 +11,10 @@ def validate_port_permissions(ctx, param, value):
     return value
 
 
-def validate_root_folder(ctx, param, value):
+def validate_directory(ctx, param, value):
     resolved_path = Path(value).resolve()
-    valid_folder = path.exists(resolved_path) and path.isdir(resolved_path)
-    if not valid_folder:
+    valid_directory = path.exists(resolved_path) and path.isdir(resolved_path)
+    if not valid_directory:
         raise click.BadParameter(f"value '{resolved_path}' is not a valid folder")
     return str(resolved_path)
 
@@ -40,10 +40,10 @@ def cli():
     callback=validate_port_permissions,
     help="the port to serve from",
 )
-@click.argument("root_folder", required=True, callback=validate_root_folder)
-def serve(verbose, host, port, debug, root_folder):
+@click.argument("root_serve_directory", required=True, callback=validate_directory)
+def serve(verbose, host, port, debug, root_serve_directory):
     server.serve(
-        host=host, port=port, verbose=verbose, root_folder=root_folder, debug=debug
+        host=host, port=port, verbose=verbose, root_serve_directory=root_serve_directory, debug=debug
     )
 
 
