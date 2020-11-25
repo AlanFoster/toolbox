@@ -47,6 +47,7 @@ def serve(verbose, host, port, debug, root_serve_directory):
         port=port,
         verbose=verbose,
         root_serve_directory=root_serve_directory,
+        config_path=Path(__file__).parent / "config.json",
         debug=debug,
     )
 
