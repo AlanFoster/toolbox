@@ -43,7 +43,11 @@ def cli():
 @click.argument("root_serve_directory", required=True, callback=validate_directory)
 def serve(verbose, host, port, debug, root_serve_directory):
     server.serve(
-        host=host, port=port, verbose=verbose, root_serve_directory=root_serve_directory, debug=debug
+        host=host,
+        port=port,
+        verbose=verbose,
+        root_serve_directory=root_serve_directory,
+        debug=debug,
     )
 
 

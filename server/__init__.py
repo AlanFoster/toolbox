@@ -1,4 +1,15 @@
-from flask import Blueprint, Flask, render_template, make_response, app, abort, current_app, redirect, url_for
+from flask import (
+    Blueprint,
+    Flask,
+    render_template,
+    make_response,
+    app,
+    abort,
+    current_app,
+    request,
+    redirect,
+    url_for,
+)
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
@@ -12,14 +23,17 @@ from pathlib import Path
 ROOT_DIRECTORY = Path(__file__).parent.parent
 TEMPLATE_DIRECTORY = Path(__file__).parent / "templates"
 TEMPLATE_NAMES = [template.name for template in Path(TEMPLATE_DIRECTORY).iterdir()]
-VALID_INTERFACES = ["lo0", "tun0"]
+VALID_INTERFACES = ["tun0", "lo", "lo0"]
 
 server = Blueprint("serve", __name__, template_folder=TEMPLATE_DIRECTORY)
+
 
 @dataclass
 class DataStore:
     lhost: str
     lport: int
+    srvhost_url: str
+
 
 def is_valid_ipv4_address(ip: str) -> bool:
     try:
@@ -38,6 +52,7 @@ def get_ip_address(interface: str) -> Optional[str]:
         return netifaces.ifaddresses(interface)[netifaces.AF_INET][0]["addr"]
     except ValueError:
         return None
+
 
 def get_default_lhost() -> str:
     for interface in VALID_INTERFACES:
@@ -67,7 +82,9 @@ def get_datastore(lhost: Optional[str], lport: Optional[str]) -> DataStore:
     return DataStore(
         lhost=get_lhost(lhost),
         lport=(int(lport) if lport else get_default_lport()),
+        srvhost_url=request.host_url,
     )
+
 
 @server.route("/shells/<template_name>")
 @server.route("/shells/<template_name>/<lport>")
@@ -98,34 +115,37 @@ with open(config_path) as config_file:
 
         server_files[server_path] = Path(local_path)
 
+
 def get_custom_file(server_path) -> Optional[str]:
     local_path = server_files.get("/" + server_path, None)
     if local_path is None:
         return None
     with open(local_path, "r") as file:
-       content = file.read()
-       return content
+        content = file.read()
+        return content
+
 
 @dataclass
 class File:
     path: str
     name: str
 
+
 @server.route("/")
 @server.route("/<path:server_path>")
-def serve_file(server_path = ""):
+def serve_file(server_path=""):
     custom_file = get_custom_file(server_path)
     if custom_file is not None:
         response = make_response(custom_file)
         response.headers["Content-Type"] = "text/plain"
         return response
 
-    root_serve_directory = Path(current_app.config['ROOT_SERVE_DIRECTORY'])
+    root_serve_directory = Path(current_app.config["ROOT_SERVE_DIRECTORY"])
     requested_path = (root_serve_directory / server_path).resolve()
     valid_child_path = (
-        (root_serve_directory in requested_path.parents or requested_path == root_serve_directory)
-        and requested_path.exists()
-    )
+        root_serve_directory in requested_path.parents
+        or requested_path == root_serve_directory
+    ) and requested_path.exists()
     if not valid_child_path:
         return abort(HTTPStatus.NOT_FOUND)
 
@@ -139,20 +159,12 @@ def serve_file(server_path = ""):
     files = []
     for file in requested_path.iterdir():
         files.append(
-            File(
-                path=file.relative_to(root_serve_directory).as_posix(),
-                name=file.name
-            )
+            File(path=file.relative_to(root_serve_directory).as_posix(), name=file.name)
         )
     files.sort(key=lambda file: file.name)
     custom_files = []
     for file in server_files.keys():
-        custom_files.append(
-            File(
-                path=file,
-                name=Path(file).name
-            )
-        )
+        custom_files.append(File(path=file, name=Path(file).name))
     custom_files.sort(key=lambda file: file.name)
     return render_template(
         "index.html",
@@ -161,12 +173,13 @@ def serve_file(server_path = ""):
         default_lport=get_default_lport(),
         files=files,
         custom_files=custom_files,
-        server_path=server_path
+        server_path=server_path,
     )
+
 
 def serve(verbose, host, port, root_serve_directory, debug=False):
     app = Flask(__name__)
-    app.config['ROOT_SERVE_DIRECTORY'] = root_serve_directory
+    app.config["ROOT_SERVE_DIRECTORY"] = root_serve_directory
     app.register_blueprint(server)
 
     app.run(host=host, port=port, debug=debug)
