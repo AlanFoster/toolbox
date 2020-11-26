@@ -19,8 +19,7 @@ import socket
 import netifaces
 import json
 from pathlib import Path
-from typing import TypeVar, List
-from collections.abc import Mapping
+from typing import TypeVar, List, Mapping
 
 import pkgutil
 
