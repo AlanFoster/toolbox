@@ -22,8 +22,10 @@ from pathlib import Path
 from typing import TypeVar, List
 from collections.abc import Mapping
 
+import pkgutil
+
 # TOOD: Rip these out
-ROOT_DIRECTORY = Path(__file__).parent.parent
+ROOT_DIRECTORY = Path(__file__).parent.parent.parent
 TEMPLATE_DIRECTORY = Path(__file__).parent / "templates"
 TEMPLATE_NAMES = [template.name for template in Path(TEMPLATE_DIRECTORY).iterdir()]
 
