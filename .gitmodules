@@ -1,3 +1,6 @@
 [submodule "privilege-escalation-awesome-scripts-suite"]
 	path = privilege-escalation-awesome-scripts-suite
 	url = https://github.com/carlospolop/privilege-escalation-awesome-scripts-suite.git
+[submodule "LinEnum"]
+	path = LinEnum
+	url = https://github.com/rebootuser/LinEnum

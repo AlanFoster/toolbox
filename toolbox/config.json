@@ -1,6 +1,10 @@
 {
     "server": [
       {
+        "server_path": "/linenum.sh",
+        "local_path": "LinEnum/LinEnum.sh"
+      },
+      {
         "server_path": "/linpeas.sh",
         "local_path": "privilege-escalation-awesome-scripts-suite/linPEAS/linpeas.sh"
       },
