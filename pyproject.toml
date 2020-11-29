@@ -1,3 +1,10 @@
-[build-system]
-requires = ["setuptools >= 40.6.0", "wheel"]
-build-backend = "setuptools.build_meta"
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -v"
+testpaths = [
+    "tests"
+]
+markers = "focus: mark a test as focused"
+
+[tool.black]
+exclude = "LinEnum|privilege-escalation-scripts|static-binaries"

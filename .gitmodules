@@ -4,3 +4,6 @@
 [submodule "LinEnum"]
 	path = LinEnum
 	url = https://github.com/rebootuser/LinEnum
+[submodule "static-binaries"]
+	path = static-binaries
+	url = https://github.com/andrew-d/static-binaries

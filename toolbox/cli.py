@@ -45,10 +45,13 @@ def cli():
 )
 @click.argument("root_serve_directory", required=True, callback=validate_directory)
 def serve(verbose, host, port, debug, root_serve_directory):
+    root_directory = Path(__file__).parent.parent
+
     server.serve(
         host=host,
         port=port,
         verbose=verbose,
+        root_directory=root_directory,
         root_serve_directory=root_serve_directory,
         config_path=Path(__file__).parent / "config.json",
         debug=debug,

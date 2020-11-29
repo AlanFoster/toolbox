@@ -11,6 +11,14 @@
       {
         "server_path": "/winpeas.bat",
         "local_path": "privilege-escalation-awesome-scripts-suite/winPEAS/winPEASbat/winPEAS.bat"
+      },
+      {
+        "server_path": "/socat",
+        "local_path": "static-binaries/binaries/linux/x86_64/socat"
+      },
+      {
+        "server_path": "/static",
+        "local_path": "static-binaries/binaries"
       }
     ]
   }

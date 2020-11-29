@@ -24,11 +24,12 @@ from typing import TypeVar, List, Mapping
 import pkgutil
 
 # TOOD: Rip these out
-ROOT_DIRECTORY = Path(__file__).parent.parent.parent
 TEMPLATE_DIRECTORY = Path(__file__).parent / "templates"
 TEMPLATE_NAMES = [template.name for template in Path(TEMPLATE_DIRECTORY).iterdir()]
 
-server = Blueprint("serve", __name__, template_folder=TEMPLATE_DIRECTORY)
+server = Blueprint(
+    "serve", __name__, template_folder=TEMPLATE_DIRECTORY, static_folder=None
+)
 
 ServerPath = str
 LocalPath = str
@@ -36,7 +37,8 @@ ServerPathMap = Mapping[ServerPath, LocalPath]
 
 
 class ServerConfig:
-    def __init__(self, config_path: str):
+    def __init__(self, root_directory: str, config_path: str):
+        self.root_directory = root_directory
         self.server_files: ServerPathMap = self._parse_config(config_path)
 
     def get_local_path(self, server_path: ServerPath) -> Optional[LocalPath]:
@@ -57,9 +59,9 @@ class ServerConfig:
                 raise ValueError(
                     f"Duplicate server_path '{server_path}' for local_path '{local_path}'"
                 )
-            local_path = ROOT_DIRECTORY / local_path
-            if not local_path.is_file():
-                raise ValueError(f"local_path '{local_path}' is not a valid file.")
+            local_path = self.root_directory / local_path
+            if not local_path.exists():
+                raise ValueError(f"local_path '{local_path}' does not exist.")
 
             server_files[server_path] = Path(local_path)
         return server_files
@@ -97,7 +99,7 @@ class PayloadGenerator:
             if result is not None:
                 return result
         raise ValueError(
-            f"Unable to get ip address for default interfaces: '{str.join(VALID_INTERFACES, ', ')}'"
+            f"Unable to get ip address for default interfaces: '{str.join(PayloadGenerator.VALID_INTERFACES, ', ')}'"
         )
 
     def _get_datastore(self, lhost: Optional[str], lport: Optional[str]) -> DataStore:
@@ -143,6 +145,13 @@ class File:
     name: str
 
 
+def removeprefix(self: str, prefix: str, /) -> str:
+    if self.startswith(prefix):
+        return self[len(prefix) :]
+    else:
+        return self[:]
+
+
 class FileServer:
     def __init__(
         self, server_config: ServerConfig, payload_generator: PayloadGenerator
@@ -153,16 +162,20 @@ class FileServer:
     def serve(self, server_path: ServerPath):
         custom_file = self._get_custom_file(server_path)
         if custom_file is not None:
-            response = make_response(custom_file)
-            response.headers["Content-Type"] = "text/plain"
-            return response
+            return custom_file
 
+        return self._get_served_file(server_path)
+
+    def _get_served_file(self, server_path: ServerPath):
+        restricted_to_path = Path(current_app.config["ROOT_SERVE_DIRECTORY"])
         root_serve_directory = Path(current_app.config["ROOT_SERVE_DIRECTORY"])
         requested_path = (root_serve_directory / server_path).resolve()
+
         # Ensure arbitrary file reads can't occur
+        # TODO: Ensure it's a file or directory
         valid_child_path = (
-            root_serve_directory in requested_path.parents
-            or requested_path == root_serve_directory
+            restricted_to_path in requested_path.parents
+            or requested_path == restricted_to_path
         ) and requested_path.exists()
         if not valid_child_path:
             return abort(HTTPStatus.NOT_FOUND)
@@ -178,7 +191,7 @@ class FileServer:
         for file in requested_path.iterdir():
             files.append(
                 File(
-                    path=file.relative_to(root_serve_directory).as_posix(),
+                    path=f"/{file.relative_to(root_serve_directory).as_posix()}",
                     name=file.name,
                 )
             )
@@ -198,14 +211,84 @@ class FileServer:
             server_path=server_path,
         )
 
-    def _get_custom_file(self, server_path: ServerPath) -> Optional[str]:
+    def _get_custom_file(self, server_path: ServerPath):
+        # test instant lookup
+        server_path_namespace = ""
         local_path = self.server_config.get_local_path("/" + server_path)
+
+        # test as a namespace
+        if local_path is None:
+            server_path_namespace = server_path.split("/")[0]
+            local_path = self.server_config.get_local_path("/" + server_path_namespace)
+
         if local_path is None:
             return None
 
-        with open(local_path, "r") as file:
-            content = file.read()
-            return content
+        restricted_to_path = Path(local_path)
+
+        server_path_without_namespace = removeprefix(server_path, server_path_namespace)
+        if server_path_without_namespace[0] == "/":
+            server_path_without_namespace = server_path_without_namespace[1:]
+
+        # TODO: The LFI restrictions are in a different location:
+        # http://localhost/static//mnt/hgfs/toolbox/static-binaries/binaries/darwin/heartbleeder
+        # root_serve_directory = Path(current_app.config["ROOT_SERVE_DIRECTORY"])
+        root_serve_directory = self.server_config.root_directory
+        requested_path = None
+
+        if server_path_namespace == "" or server_path_without_namespace == "/":
+            requested_path = local_path
+        else:
+            requested_path = (
+                root_serve_directory / local_path / server_path_without_namespace
+            ).resolve()
+
+        valid_child_path = (
+            restricted_to_path in requested_path.parents
+            or requested_path == restricted_to_path
+        ) and requested_path.exists()
+        if not valid_child_path:
+            return abort(HTTPStatus.NOT_FOUND)
+
+        # TODO: Ensure there's no LFI here either... Perhaps a global file read to ensure we _never_ accidentally read outside of this base toolbox.
+        # TODO: Consider weird things like sockets
+        if requested_path.is_file():
+            with open(requested_path, "rb") as file:
+                content = file.read()
+                return content
+
+            response = make_response(content)
+            response.headers["Content-Type"] = "text/plain"
+            return response
+        elif requested_path.is_dir():
+            path_prefix = None
+
+            if server_path_namespace == "":
+                path_prefix = f"/{server_path}/"
+            else:
+                path_prefix = f"/{server_path_namespace}/"
+
+            files = []
+            for file in requested_path.iterdir():
+                files.append(
+                    File(
+                        path=f"{path_prefix}{str(file.relative_to(local_path).as_posix())}",
+                        name=file.name,
+                    )
+                )
+            files.sort(key=lambda file: file.name)
+
+            return render_template(
+                "index.html",
+                valid_shell_types=TEMPLATE_NAMES,
+                default_lhost=self.payload_generator.default_lhost,
+                default_lport=self.payload_generator.default_lport,
+                files=files,
+                custom_files=[],
+                server_path=server_path,
+            )
+        else:
+            return abort(HTTPStatus.NOT_FOUND)
 
 
 @server.route("/shells/<name>")
@@ -221,11 +304,14 @@ def shell(name: str, lhost: Optional[str] = None, lport: Optional[str] = None):
     return response
 
 
-@server.route("/")
+@server.route("/", defaults={"server_path": ""})
 @server.route("/<path:server_path>")
-def serve_file(server_path=""):
+def serve_file(server_path):
     payload_generator = PayloadGenerator(config_path=current_app.config["CONFIG_PATH"])
-    server_config = ServerConfig(config_path=current_app.config["CONFIG_PATH"])
+    server_config = ServerConfig(
+        root_directory=current_app.config["ROOT_DIRECTORY"],
+        config_path=current_app.config["CONFIG_PATH"],
+    )
     file_server = FileServer(
         server_config=server_config, payload_generator=payload_generator
     )
@@ -233,8 +319,11 @@ def serve_file(server_path=""):
     return file_server.serve(server_path)
 
 
-def serve(verbose, host, port, root_serve_directory, config_path, debug=False):
-    app = Flask(__name__)
+def serve(
+    verbose, host, port, root_directory, root_serve_directory, config_path, debug=False
+):
+    app = Flask(__name__, static_folder=None)
+    app.config["ROOT_DIRECTORY"] = root_directory
     app.config["ROOT_SERVE_DIRECTORY"] = root_serve_directory
     app.config["CONFIG_PATH"] = config_path
     app.register_blueprint(server)

@@ -25,6 +25,38 @@ By default the server supports the following files:
 - [Payloads](toolbox/server/templates)
 - [Common tools](toolbox/config.json)
 
+### Running tests
+
+```
+pipenv install --dev
+pytest
+```
+
+To run only one set of tests add the focus marker:
+
+```
+@pytest.mark.focus
+def test_some_method():
+    assert 1 == 1
+```
+
+Run with:
+```
+pytest -m focus
+```
+
+Add a debugging breakpoint with:
+
+```
+breakpoint()
+```
+
+Updating snapshots:
+
+```
+pytest --snapshot-update
+```
+
 ### Notes
 
 Adding additional tools:
