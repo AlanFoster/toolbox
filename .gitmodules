@@ -1,9 +1,9 @@
-[submodule "privilege-escalation-awesome-scripts-suite"]
-	path = privilege-escalation-awesome-scripts-suite
+[submodule "third_party/privilege-escalation-awesome-scripts-suite"]
+	path = third_party/privilege-escalation-awesome-scripts-suite
 	url = https://github.com/carlospolop/privilege-escalation-awesome-scripts-suite.git
-[submodule "LinEnum"]
-	path = LinEnum
+[submodule "third_party/LinEnum"]
+	path = third_party/LinEnum
 	url = https://github.com/rebootuser/LinEnum
-[submodule "static-binaries"]
-	path = static-binaries
+[submodule "third_party/static-binaries"]
+	path = third_party/static-binaries
 	url = https://github.com/andrew-d/static-binaries

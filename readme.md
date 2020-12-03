@@ -59,14 +59,14 @@ pytest --snapshot-update
 
 ### Notes
 
-Adding additional tools:
-- `git submodule add https://github.com/foo/bar`
+Adding additional third party projects:
+- `git submodule add https://github.com/owner/project_name third_party/project_name`
 
-TODO:
+### Planned
+
 - Configure setup.py to install only the required source code + datafiles + licenses
 - Use gunicorn / uwsgi in 'production' mode
 - Add additional files:
-    - static socat
     - static pspy64
 
 ## References
