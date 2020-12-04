@@ -65,7 +65,7 @@ def test_index_shells(client):
 
     expected_custom_files = [
         b'<li><a href="/shells/shell.js">/shells/shell.js</a>',
-        b'<li><a href="/shells/shell.js/4444">/shells/shell.js/4445</a>',
+        b'<li><a href="/shells/shell.js/4444">/shells/shell.js/4444</a>',
         b'<li><a href="/shells/shell.js/127.0.0.1/4444">/shells/shell.js/127.0.0.1/4444</a>',
     ]
 

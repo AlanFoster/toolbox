@@ -34,7 +34,7 @@
         <h3>{{ valid_shell_type }}</h3>
         <ul>
             <li><a href="/shells/{{valid_shell_type}}">/shells/{{valid_shell_type}}</a> - running on default host/port {{default_lhost}} {{default_lport}}</li>
-            <li><a href="/shells/{{valid_shell_type}}/{{default_lport}}">/shells/{{valid_shell_type}}/4445</a> - custom port</a></li>
+            <li><a href="/shells/{{valid_shell_type}}/{{default_lport}}">/shells/{{valid_shell_type}}/{{default_lport}}</a> - custom port</a></li>
             <li><a href="/shells/{{valid_shell_type}}/{{default_lhost}}/{{default_lport}}">/shells/{{valid_shell_type}}/{{default_lhost}}/{{default_lport}}</a> - custom host and port</li>
         </ul>
     {%- endfor %}
