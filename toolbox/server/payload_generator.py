@@ -35,7 +35,12 @@ class PayloadGenerator:
     def __init__(self):
         pass
 
-    def generate(self, name: str, lhost: Optional[str], lport: Optional[str]) -> str:
+    def generate(
+        self, name: str, lhost: Optional[str], lport: Optional[str]
+    ) -> Optional[str]:
+        if name not in self:
+            return None
+
         # TODO: Don't rely on render_template
         payload = render_template(name, datastore=self._get_datastore(lhost, lport))
         return payload
@@ -46,7 +51,11 @@ class PayloadGenerator:
     @property
     def template_names(self):
         # TODO: Decide if this should honor jinja's templates_auto_reload mechanism
-        return [template.name for template in Path(TEMPLATE_DIRECTORY).iterdir()]
+        return [
+            template.name
+            for template in Path(TEMPLATE_DIRECTORY).iterdir()
+            if template.name != "index.html"
+        ]
 
     @property
     def default_lport(self) -> int:

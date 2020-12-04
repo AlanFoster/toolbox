@@ -247,3 +247,20 @@ def test_shell_sh(client, path, expected):
 def test_shell_lua(client, path, expected):
     response = client.get(path)
     assert response.data == expected
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "/shells/missing.sh",
+        "/shells/missing.sh/5555",
+        "/shells/missing.sh/10.10.10.10/1234",
+        "/shells/index.html",
+        "/shells/index.html/5555",
+        "/shells/index.html/10.10.10.10/1234",
+    ],
+)
+def test_shell_invalid_shells(client, path):
+    response = client.get(path)
+    assert response.status_code == HTTPStatus.IM_A_TEAPOT
+    assert b"Shell type not supported" in response.data

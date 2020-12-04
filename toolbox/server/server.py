@@ -28,9 +28,9 @@ server = Blueprint(
 @server.route("/shells/<name>/<lhost>/<lport>")
 def shell(name: str, lhost: Optional[str] = None, lport: Optional[str] = None):
     payload_generator = PayloadGenerator()
-    if name not in payload_generator:
-        return abort(HTTPStatus.IM_A_TEAPOT, description="Shell type not supported")
     payload = payload_generator.generate(name=name, lhost=lhost, lport=lport)
+    if payload is None:
+        return abort(HTTPStatus.IM_A_TEAPOT, description="Shell type not supported")
     response = make_response(payload)
     response.headers["Content-Type"] = "text/plain"
     return response
