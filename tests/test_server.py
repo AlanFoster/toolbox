@@ -173,10 +173,10 @@ def test_exploring_custom_files_with_namespace(client, path, expected_links):
 @pytest.mark.parametrize(
     "path",
     [
-        ("/missing.sh"),
-        ("/foo/missing.sh"),
-        ("/foo/bar/missing.sh"),
-        ("/foo/bar/missing.sh"),
+        "/missing.sh",
+        "/foo/missing.sh",
+        "/foo/bar/missing.sh",
+        "/foo/bar/missing.sh",
     ],
 )
 def test_requesting_missing_files(client, path):
@@ -188,14 +188,12 @@ def test_requesting_missing_files(client, path):
 @pytest.mark.parametrize(
     "path",
     [
-        ("//etc/passwd"),
-        ("/../../../../../../../../../../../../../../../../../../etc/passwd"),
-        ("/folder//etc/passwd"),
-        ("/my_custom_namespace//etc/passwd"),
-        (
-            "/my_custom_namespace//../../../../../../../../../../../../../../../../../../etc/passwd"
-        ),
-        ("/my_custom_namespace/../local_file_inclusion_test.txt"),
+        "//etc/passwd",
+        "/../../../../../../../../../../../../../../../../../../etc/passwd",
+        "/folder//etc/passwd",
+        "/my_custom_namespace//etc/passwd",
+        "/my_custom_namespace//../../../../../../../../../../../../../../../../../../etc/passwd",
+        "/my_custom_namespace/../local_file_inclusion_test.txt",
     ],
 )
 def test_security_against_local_file_inclusion(client, path):
