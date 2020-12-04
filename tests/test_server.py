@@ -188,15 +188,21 @@ def test_requesting_missing_files(client, path):
 @pytest.mark.parametrize(
     "path",
     [
+        "../../../../../.../../../../../../../../../../../../../../../etc",
+        "../../../../../.../../../../../../../../../../../../../../../etc/",
+        "../../../../../.../../../../../../../../../../../../../../../etc/passwd",
         "//etc/passwd",
         "/../../../../../../../../../../../../../../../../../../etc/passwd",
         "/folder//etc/passwd",
         "/my_custom_namespace//etc/passwd",
+        "/my_custom_namespace//etc/",
         "/my_custom_namespace//../../../../../../../../../../../../../../../../../../etc/passwd",
-        "/my_custom_namespace/../local_file_inclusion_test.txt",
+        "/my_custom_namespace/../../../../../../../../../../../../../../../../../../etc/",
+        "/my_custom_namespace/../../../../../../../../../../../../../../../../../../etc",
+        "/my_custom_namespace/../arbitrary_file_read_test.txt",
     ],
 )
-def test_security_against_local_file_inclusion(client, path):
+def test_security_against_arbitrary_file_read(client, path):
     response = client.get(path)
     assert response.status_code == HTTPStatus.NOT_FOUND
     assert b"The requested URL was not found on the server" in response.data
