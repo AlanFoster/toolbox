@@ -260,5 +260,5 @@ def test_shell_lua(client, path, expected):
 )
 def test_shell_invalid_shells(client, path):
     response = client.get(path)
-    assert response.status_code == HTTPStatus.IM_A_TEAPOT
-    assert b"Shell type not supported" in response.data
+    assert response.status_code == HTTPStatus.NOT_FOUND
+    assert b"The requested URL was not found on the server" in response.data

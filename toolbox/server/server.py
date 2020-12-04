@@ -30,7 +30,7 @@ def shell(name: str, lhost: Optional[str] = None, lport: Optional[str] = None):
     payload_generator = PayloadGenerator()
     payload = payload_generator.generate(name=name, lhost=lhost, lport=lport)
     if payload is None:
-        return abort(HTTPStatus.IM_A_TEAPOT, description="Shell type not supported")
+        return abort(HTTPStatus.NOT_FOUND)
     response = make_response(payload)
     response.headers["Content-Type"] = "text/plain"
     return response
