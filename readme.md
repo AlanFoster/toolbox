@@ -13,62 +13,81 @@ python3 toolbox.py --help
 
 ### Server
 
-The server will host files in the current directory as well as additional payloads and common utilities:
+The server will:
+- Serve the files within the provided directory
+- Serve common CTF tools, such as linpeas.sh and static binaries
+- Serve payload/shell generation
+
+Usage:
 
 ```
 toolbox serve -p 8000 .
 ```
 
-You can now visit the running website at `http://localhost:8000`
+You can now visit the running server at `http://localhost:8000`
+
+![Example of the running server](./images/server.png)
 
 By default the server supports the following files:
+
 - [Payloads](toolbox/server/templates)
 - [Common tools](toolbox/config.json)
 
-### Running tests
+## Contributing
+
+### Adding additional tools
+
+You can add additional third party projects by creating a new submodule:
 
 ```
+git submodule add https://github.com/owner/project_name third_party/project_name
+```
+
+And updating the associated [configuration file](toolbox/config.json) to include the new tool.
+
+### Running tests
+
+You must first install the developer tools:
+
+```shell
 pipenv install --dev
+```
+
+Running all tests:
+
+```
 pytest
 ```
 
 To run only one set of tests add the focus marker:
 
-```
+```python
 @pytest.mark.focus
 def test_some_method():
     assert 1 == 1
 ```
 
 Run with:
-```
+
+```shell
 pytest -m focus
 ```
 
 Add a debugging breakpoint with:
 
-```
+```python
 breakpoint()
 ```
 
 Updating snapshots:
 
-```
+```shell
 pytest --snapshot-update
 ```
 
-### Notes
-
-Adding additional third party projects:
-- `git submodule add https://github.com/owner/project_name third_party/project_name`
-
-### Planned
+## Planned
 
 - Configure setup.py to install only the required source code + datafiles + licenses
 - Use gunicorn / uwsgi in 'production' mode
 - Add additional files:
-    - static pspy64
-
-## References
-
-- https://python-packaging.readthedocs.io/en/latest/index.html
+  - static pspy64
