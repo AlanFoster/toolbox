@@ -109,45 +109,40 @@ class FileServer:
         If the given file or folder does not exist, None is returned
         """
         # First test if the file can be found as a direct mapping
-        server_path_namespace = ""
-        local_path = self.server_config.get_local_path("/" + server_path)
+        server_path_namespace = None
+        local_path_mapping = self.server_config.get_local_path("/" + server_path)
 
         # There may not be a local file found, but test if it exists as a namespace
-        if local_path is None:
+        if local_path_mapping is None:
             server_path_namespace = server_path.split("/")[0]
-            local_path = self.server_config.get_local_path("/" + server_path_namespace)
+            local_path_mapping = self.server_config.get_local_path(
+                "/" + server_path_namespace
+            )
 
-        if local_path is None:
+        if local_path_mapping is None:
             return None
 
-        restricted_to_path = Path(local_path)
-
-        server_path_without_namespace = removeprefix(server_path, server_path_namespace)
-        if server_path_without_namespace[0] == "/":
-            server_path_without_namespace = server_path_without_namespace[1:]
-
-        local_path_with_namespace = None
-
-        if server_path_namespace == "" or server_path_without_namespace == "/":
-            local_path_with_namespace = local_path
+        restricted_to_path = Path(local_path_mapping)
+        local_path = None
+        if server_path_namespace is None:
+            local_path = local_path_mapping
         else:
-            root_serve_directory = self.server_config.root_directory
-            local_path_with_namespace = (
-                root_serve_directory / local_path / server_path_without_namespace
-            ).resolve()
+            relative_path = removeprefix(server_path, server_path_namespace)
+            if relative_path[0] == "/":
+                relative_path = relative_path[1:]
+            local_path = (local_path_mapping / relative_path).resolve()
 
         def calculate_file_path_func(file_path: Path):
-            path_prefix = None
-
-            if server_path_namespace == "":
-                path_prefix = f"/{server_path}/"
+            server_path_prefix = None
+            if server_path_namespace is None:
+                server_path_prefix = f"/{server_path}/"
             else:
-                path_prefix = f"/{server_path_namespace}/"
+                server_path_prefix = f"/{server_path_namespace}/"
 
-            return f"{path_prefix}{str(file_path.relative_to(local_path).as_posix())}"
+            return f"{server_path_prefix}{str(file_path.relative_to(local_path_mapping).as_posix())}"
 
         return self._serve_file_or_folder(
-            local_path_with_namespace,
+            local_path,
             server_path,
             restricted_to_path,
             calculate_file_path_func,
