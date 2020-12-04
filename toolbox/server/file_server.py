@@ -26,6 +26,12 @@ LocalPath = str
 ServerPathMap = Mapping[ServerPath, LocalPath]
 
 
+@dataclass
+class File:
+    path: str
+    name: str
+
+
 class ServerConfig:
     def __init__(self, root_directory: str, config_path: str):
         self.root_directory = root_directory
@@ -57,12 +63,6 @@ class ServerConfig:
         return server_files
 
 
-@dataclass
-class File:
-    path: str
-    name: str
-
-
 def removeprefix(self: str, prefix: str, /) -> str:
     if self.startswith(prefix):
         return self[len(prefix) :]
@@ -78,63 +78,41 @@ class FileServer:
         self.payload_generator = payload_generator
 
     def serve(self, server_path: ServerPath):
-        custom_file = self._get_custom_file(server_path)
+        custom_file = self._serve_custom_file_or_folder(server_path)
         if custom_file is not None:
             return custom_file
 
-        return self._get_served_file(server_path)
+        return self._serve_root_file_or_folder(server_path)
 
-    def _get_served_file(self, server_path: ServerPath):
+    def _serve_root_file_or_folder(self, server_path: ServerPath):
+        """
+        Serve a file or folder from the root serve directory, i.e. the arbitrary
+        files that the user has specified to serve.
+
+        If the given file or folder does not exist, a 404 is returned
+        """
         restricted_to_path = Path(current_app.config["ROOT_SERVE_DIRECTORY"])
         root_serve_directory = Path(current_app.config["ROOT_SERVE_DIRECTORY"])
-        requested_path = (root_serve_directory / server_path).resolve()
+        local_path = (root_serve_directory / server_path).resolve()
 
-        # Ensure arbitrary file reads can't occur
-        # TODO: Ensure it's a file or directory
-        valid_child_path = (
-            restricted_to_path in requested_path.parents
-            or requested_path == restricted_to_path
-        ) and requested_path.exists()
-        if not valid_child_path:
-            return abort(HTTPStatus.NOT_FOUND)
+        def calculate_file_path_func(file_path: Path):
+            return f"/{file_path.relative_to(root_serve_directory).as_posix()}"
 
-        if requested_path.is_file():
-            with open(requested_path, "rb") as file:
-                content = file.read()
-            response = make_response(content)
-            response.headers["Content-Type"] = "text/plain"
-            return response
-
-        files = []
-        for file in requested_path.iterdir():
-            files.append(
-                File(
-                    path=f"/{file.relative_to(root_serve_directory).as_posix()}",
-                    name=file.name,
-                )
-            )
-        files.sort(key=lambda file: file.name)
-        custom_files = []
-        for file in self.server_config.server_paths():
-            custom_files.append(File(path=file, name=Path(file).name))
-        custom_files.sort(key=lambda file: file.name)
-
-        return render_template(
-            "index.html",
-            valid_shell_types=self.payload_generator.template_names,
-            default_lhost=self.payload_generator.default_lhost,
-            default_lport=self.payload_generator.default_lport,
-            files=files,
-            custom_files=custom_files,
-            server_path=server_path,
+        return self._serve_file_or_folder(
+            local_path, server_path, restricted_to_path, calculate_file_path_func
         )
 
-    def _get_custom_file(self, server_path: ServerPath):
-        # test instant lookup
+    def _serve_custom_file_or_folder(self, server_path: ServerPath):
+        """
+        Serve an inbuilt / custom configured file or folder.
+
+        If the given file or folder does not exist, None is returned
+        """
+        # First test if the file can be found as a direct mapping
         server_path_namespace = ""
         local_path = self.server_config.get_local_path("/" + server_path)
 
-        # test as a namespace
+        # There may not be a local file found, but test if it exists as a namespace
         if local_path is None:
             server_path_namespace = server_path.split("/")[0]
             local_path = self.server_config.get_local_path("/" + server_path_namespace)
@@ -148,37 +126,17 @@ class FileServer:
         if server_path_without_namespace[0] == "/":
             server_path_without_namespace = server_path_without_namespace[1:]
 
-        # TODO: The LFI restrictions are in a different location:
-        # http://localhost/static//mnt/hgfs/toolbox/static-binaries/binaries/darwin/heartbleeder
-        # root_serve_directory = Path(current_app.config["ROOT_SERVE_DIRECTORY"])
-        root_serve_directory = self.server_config.root_directory
-        requested_path = None
+        local_path_with_namespace = None
 
         if server_path_namespace == "" or server_path_without_namespace == "/":
-            requested_path = local_path
+            local_path_with_namespace = local_path
         else:
-            requested_path = (
+            root_serve_directory = self.server_config.root_directory
+            local_path_with_namespace = (
                 root_serve_directory / local_path / server_path_without_namespace
             ).resolve()
 
-        valid_child_path = (
-            restricted_to_path in requested_path.parents
-            or requested_path == restricted_to_path
-        ) and requested_path.exists()
-        if not valid_child_path:
-            return abort(HTTPStatus.NOT_FOUND)
-
-        # TODO: Ensure there's no LFI here either... Perhaps a global file read to ensure we _never_ accidentally read outside of this base toolbox.
-        # TODO: Consider weird things like sockets
-        if requested_path.is_file():
-            with open(requested_path, "rb") as file:
-                content = file.read()
-                return content
-
-            response = make_response(content)
-            response.headers["Content-Type"] = "text/plain"
-            return response
-        elif requested_path.is_dir():
+        def calculate_file_path_func(file_path: Path):
             path_prefix = None
 
             if server_path_namespace == "":
@@ -186,15 +144,54 @@ class FileServer:
             else:
                 path_prefix = f"/{server_path_namespace}/"
 
+            return f"{path_prefix}{str(file_path.relative_to(local_path).as_posix())}"
+
+        return self._serve_file_or_folder(
+            local_path_with_namespace,
+            server_path,
+            restricted_to_path,
+            calculate_file_path_func,
+        )
+
+    def _serve_file_or_folder(
+        self,
+        local_path: LocalPath,
+        server_path: ServerPath,
+        restricted_to_path: Path,
+        calculate_file_path_func,
+    ):
+        """
+        Attempts to serve the given file or directory to the user.
+
+        If the local_path is a file, it sends a file to the user.
+        If the local_path is a folder, it renders the directory contents
+
+        To guard against arbitrary reads - the local_path must exist within the
+        restrict_to_path argument, otherwise a 404 is returned.
+        """
+        valid_child_path = (
+            restricted_to_path in local_path.parents or local_path == restricted_to_path
+        ) and local_path.exists()
+        if not valid_child_path:
+            return abort(HTTPStatus.NOT_FOUND)
+
+        if local_path.is_file():
+            return self._send_file(local_path, restricted_to_path)
+        elif local_path.is_dir():
             files = []
-            for file in requested_path.iterdir():
+            for file in local_path.iterdir():
                 files.append(
                     File(
-                        path=f"{path_prefix}{str(file.relative_to(local_path).as_posix())}",
+                        path=calculate_file_path_func(file),
                         name=file.name,
                     )
                 )
             files.sort(key=lambda file: file.name)
+
+            custom_files = []
+            for file in self.server_config.server_paths():
+                custom_files.append(File(path=file, name=Path(file).name))
+            custom_files.sort(key=lambda file: file.name)
 
             return render_template(
                 "index.html",
@@ -202,8 +199,35 @@ class FileServer:
                 default_lhost=self.payload_generator.default_lhost,
                 default_lport=self.payload_generator.default_lport,
                 files=files,
-                custom_files=[],
+                custom_files=custom_files,
                 server_path=server_path,
             )
         else:
             return abort(HTTPStatus.NOT_FOUND)
+
+    def _send_file(self, local_path: LocalPath, restricted_to_path: Path):
+        """
+        Responds with the current file if it exists as a file
+
+        To guard against arbitrary reads - the local_path must exist within the
+        restrict_to_path argument, otherwise a 404 is returned.
+        """
+        is_valid_file_path = (
+            (
+                restricted_to_path in local_path.parents
+                or local_path == restricted_to_path
+            )
+            and local_path.exists()
+            and local_path.is_file()
+        )
+
+        if not is_valid_file_path:
+            return abort(HTTPStatus.NOT_FOUND)
+
+        with open(local_path, "rb") as file:
+            content = file.read()
+            return content
+
+        response = make_response(content)
+        response.headers["Content-Type"] = "text/plain"
+        return response

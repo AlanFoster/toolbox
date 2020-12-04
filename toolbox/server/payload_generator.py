@@ -18,7 +18,6 @@ import netifaces
 from pathlib import Path
 
 
-# TOOD: Rip these out
 TEMPLATE_DIRECTORY = Path(__file__).parent / "templates"
 
 
@@ -41,7 +40,7 @@ class PayloadGenerator:
         if name not in self:
             return None
 
-        # TODO: Don't rely on render_template
+        # TODO: Decide if it would be better to remove render_template and call jinja or similar directly
         payload = render_template(name, datastore=self._get_datastore(lhost, lport))
         return payload
 
@@ -75,7 +74,6 @@ class PayloadGenerator:
         return DataStore(
             lhost=(lhost if lhost else self.default_lhost),
             lport=(int(lport) if lport else self.default_lport),
-            # TODO: Add a cleaner way of doing this
             srvhost_url=request.host_url,
         )
 
