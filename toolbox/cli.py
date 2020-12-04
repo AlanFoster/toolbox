@@ -30,10 +30,22 @@ def cli():
 @cli.command()
 @click.option("--host", default="0.0.0.0", help="Host to bind on")
 @click.option(
-    "--debug/--no-debug", is_flag=True, default=False, help="Enable debug mode"
+    "--debug/--no-debug",
+    is_flag=True,
+    default=False,
+    help="Enable debug mode. Note this exposes `/console` which could potentially be accessed remotely and access could be bruteforced.",
 )
 @click.option(
-    "-v", "--verbose", is_flag=True, default=False, help="Enable verbose logging"
+    "--reload/--no-reload",
+    is_flag=True,
+    default=False,
+    help="Enable reloading of files. This includes python files *and* python files",
+)
+@click.option(
+    "-v", "--verbose",
+    is_flag=True,
+    default=False,
+    help="Enable verbose logging"
 )
 @click.option(
     "-p",
@@ -44,7 +56,7 @@ def cli():
     help="the port to serve from",
 )
 @click.argument("root_serve_directory", required=True, callback=validate_directory)
-def serve(verbose, host, port, debug, root_serve_directory):
+def serve(host, port, debug, reload, verbose, root_serve_directory):
     root_directory = Path(__file__).parent.parent
 
     server.serve(
@@ -54,7 +66,8 @@ def serve(verbose, host, port, debug, root_serve_directory):
         root_directory=root_directory,
         root_serve_directory=root_serve_directory,
         config_path=Path(__file__).parent / "config.json",
-        debug=debug,
+        use_debugger=debug,
+        use_reloader=reload,
     )
 
 

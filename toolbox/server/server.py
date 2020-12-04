@@ -320,12 +320,20 @@ def serve_file(server_path):
 
 
 def serve(
-    verbose, host, port, root_directory, root_serve_directory, config_path, debug=False
+    verbose,
+    host,
+    port,
+    root_directory,
+    root_serve_directory,
+    config_path,
+    use_debugger=False,
+    use_reloader=False,
 ):
     app = Flask(__name__, static_folder=None)
     app.config["ROOT_DIRECTORY"] = root_directory
     app.config["ROOT_SERVE_DIRECTORY"] = root_serve_directory
     app.config["CONFIG_PATH"] = config_path
+    app.config["TEMPLATES_AUTO_RELOAD"] = use_reloader
     app.register_blueprint(server)
 
-    app.run(host=host, port=port, debug=debug)
+    app.run(host=host, port=port, use_debugger=use_debugger, use_reloader=use_reloader)
