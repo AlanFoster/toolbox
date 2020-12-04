@@ -22,14 +22,16 @@ from .payload_generator import PayloadGenerator
 
 
 ServerPath = str
-LocalPath = str
+LocalPath = Path
 ServerPathMap = Mapping[ServerPath, LocalPath]
 
 
 @dataclass
 class File:
-    path: str
+    server_path: str
     name: str
+    is_dir: str
+    is_file: str
 
 
 class ServerConfig:
@@ -39,6 +41,9 @@ class ServerConfig:
 
     def get_local_path(self, server_path: ServerPath) -> Optional[LocalPath]:
         return self.server_files.get(server_path, None)
+
+    def items(self):
+        return self.server_files.items()
 
     def server_paths(self) -> List[ServerPath]:
         return self.server_files.keys()
@@ -95,11 +100,11 @@ class FileServer:
         root_serve_directory = Path(current_app.config["ROOT_SERVE_DIRECTORY"])
         local_path = (root_serve_directory / server_path).resolve()
 
-        def calculate_file_path_func(file_path: Path):
+        def calculate_file_server_path_func(file_path: Path):
             return f"/{file_path.relative_to(root_serve_directory).as_posix()}"
 
         return self._serve_file_or_folder(
-            local_path, server_path, restricted_to_path, calculate_file_path_func
+            local_path, server_path, restricted_to_path, calculate_file_server_path_func
         )
 
     def _serve_custom_file_or_folder(self, server_path: ServerPath):
@@ -132,7 +137,7 @@ class FileServer:
                 relative_path = relative_path[1:]
             local_path = (local_path_mapping / relative_path).resolve()
 
-        def calculate_file_path_func(file_path: Path):
+        def calculate_file_server_path_func(file_path: Path):
             server_path_prefix = None
             if server_path_namespace is None:
                 server_path_prefix = f"/{server_path}/"
@@ -145,7 +150,7 @@ class FileServer:
             local_path,
             server_path,
             restricted_to_path,
-            calculate_file_path_func,
+            calculate_file_server_path_func,
         )
 
     def _serve_file_or_folder(
@@ -153,7 +158,7 @@ class FileServer:
         local_path: LocalPath,
         server_path: ServerPath,
         restricted_to_path: Path,
-        calculate_file_path_func,
+        calculate_file_server_path_func,
     ):
         """
         Attempts to serve the given file or directory to the user.
@@ -174,19 +179,16 @@ class FileServer:
             return self._send_file(local_path, restricted_to_path)
         elif local_path.is_dir():
             files = []
-            for file in local_path.iterdir():
+            for child_path in local_path.iterdir():
                 files.append(
                     File(
-                        path=calculate_file_path_func(file),
-                        name=file.name,
+                        server_path=calculate_file_server_path_func(child_path),
+                        name=child_path.name,
+                        is_dir=child_path.is_dir(),
+                        is_file=child_path.is_file(),
                     )
                 )
             files.sort(key=lambda file: file.name)
-
-            custom_files = []
-            for file in self.server_config.server_paths():
-                custom_files.append(File(path=file, name=Path(file).name))
-            custom_files.sort(key=lambda file: file.name)
 
             return render_template(
                 "index.html",
@@ -194,11 +196,25 @@ class FileServer:
                 default_lhost=self.payload_generator.default_lhost,
                 default_lport=self.payload_generator.default_lport,
                 files=files,
-                custom_files=custom_files,
+                custom_files=self._get_custom_files(),
                 server_path=server_path,
             )
         else:
             return abort(HTTPStatus.NOT_FOUND)
+
+    def _get_custom_files(self) -> List[File]:
+        custom_files = []
+        for server_path, local_path in self.server_config.items():
+            custom_files.append(
+                File(
+                    server_path=server_path,
+                    name=Path(server_path).name,
+                    is_dir=local_path.is_dir(),
+                    is_file=local_path.is_file(),
+                )
+            )
+        custom_files.sort(key=lambda file: file.name)
+        return custom_files
 
     def _send_file(self, local_path: LocalPath, restricted_to_path: Path):
         """

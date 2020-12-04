@@ -37,7 +37,7 @@ def test_index_served_files(client):
     assert response.status_code == HTTPStatus.OK
 
     expected_served_files = [
-        b'<li><a href="/folder">folder</a></li>',
+        b'<li><a href="/folder">folder/</a></li>',
         b'<li><a href="/simple.txt">simple.txt</a></li>',
     ]
 
@@ -52,7 +52,7 @@ def test_index_custom_files(client):
     expected_custom_files = [
         b'<li><a href="/enum_linux.sh">enum_linux.sh</a></li>',
         b'<li><a href="/enum_windows.exe">enum_windows.exe</a></li>',
-        b'<li><a href="/my_custom_namespace">my_custom_namespace</a></li>',
+        b'<li><a href="/my_custom_namespace">my_custom_namespace/</a></li>',
     ]
 
     for link in expected_custom_files:
@@ -94,7 +94,7 @@ def test_reading_served_files(client, path, expected_data):
             "/folder",
             [
                 b'<a href="/folder/child.txt">child.txt</a>',
-                b'<a href="/folder/nested_folder">nested_folder</a>',
+                b'<a href="/folder/nested_folder">nested_folder/</a>',
             ],
         ),
         (
@@ -142,15 +142,15 @@ def test_reading_custom_files_with_namespace(client, path, expected_data):
         (
             "/my_custom_namespace",
             [
-                b'<li><a href="/my_custom_namespace/linux">linux</a></li>',
-                b'<li><a href="/my_custom_namespace/windows">windows</a></li>',
+                b'<li><a href="/my_custom_namespace/linux">linux/</a></li>',
+                b'<li><a href="/my_custom_namespace/windows">windows/</a></li>',
             ],
         ),
         (
             "/my_custom_namespace/",
             [
-                b'<li><a href="/my_custom_namespace/linux">linux</a></li>',
-                b'<li><a href="/my_custom_namespace/windows">windows</a></li>',
+                b'<li><a href="/my_custom_namespace/linux">linux/</a></li>',
+                b'<li><a href="/my_custom_namespace/windows">windows/</a></li>',
             ],
         ),
         (

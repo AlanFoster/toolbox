@@ -10,18 +10,18 @@
 
 <ul>
 {%- for file in files %}
-    <li><a href="{{file.path}}">{{file.name}}</a></li>
+    <li><a href="{{file.server_path}}">{{file.name}}{{ '/' if file.is_dir else '' }}</a></li>
 {%- endfor %}
 </ul>
 <hr>
 
 {%- if server_path == '' %}
-    <h2>Custom files</h2>
+    <h2>Inbuilt files</h2>
     <hr>
 
     <ul>
         {%- for file in custom_files %}
-            <li><a href="{{file.path}}">{{file.name}}</a></li>
+            <li><a href="{{file.server_path}}">{{file.name}}{{ '/' if file.is_dir else '' }}</a></li>
         {%- endfor %}
         </ul>
     <hr>
