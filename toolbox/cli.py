@@ -3,7 +3,6 @@ from toolbox import __version__
 from toolbox.server import server
 
 from os import geteuid, path
-from dataclasses import dataclass
 from pathlib import Path
 
 
@@ -42,10 +41,7 @@ def cli():
     help="Enable reloading of files. This includes python files *and* python files",
 )
 @click.option(
-    "-v", "--verbose",
-    is_flag=True,
-    default=False,
-    help="Enable verbose logging"
+    "-v", "--verbose", is_flag=True, default=False, help="Enable verbose logging"
 )
 @click.option(
     "-p",
