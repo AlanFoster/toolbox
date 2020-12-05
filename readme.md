@@ -2,10 +2,22 @@
 
 ## Installing
 
+Note: When running `git clone`, you will need to configure Git to authenticate with SSH, or you can create a [disposable personal access token](https://docs.github.com/en/free-pro-team@latest/github/authenticating-to-github/creating-a-personal-access-token#creating-a-token) with access to private repositories enabled and use that in conjunction with your username to authenticate.
+
 ```
 git clone https://github.com/AlanFoster/toolbox.git
-git submodule update
+```
+
+Install the dependencies:
+```
+cd toolbox
+git submodule update --init --recursive
 pip3 install -r requirements.txt
+```
+
+Verify it works:
+
+```
 python3 toolbox.py --help
 ```
 
@@ -21,7 +33,7 @@ The server will:
 Usage:
 
 ```
-toolbox serve -p 8000 .
+python3 toolbox.py serve -p 8000 .
 ```
 
 You can now visit the running server at `http://localhost:8000`
@@ -35,9 +47,18 @@ By default the server supports the following files:
 
 ## Contributing
 
+### Updating requirements.txt
+
+Updating `pipenv` currently requires a manual change to `requirements.txt`.
+This file will not contain dev-dependencies and is meant for end-users.
+
+```
+pipenv lock -r > requirements.txt
+```
+
 ### Adding additional tools
 
-You can add additional third party projects by creating a new submodule:
+You can add additional third party projects by creating a new Git submodule:
 
 ```
 git submodule add https://github.com/owner/project_name third_party/project_name
@@ -47,7 +68,7 @@ And updating the associated [configuration file](toolbox/config.json) to include
 
 ### Running tests
 
-You must first install the developer tools:
+You must first install the developer dependencies:
 
 ```shell
 pipenv install --dev

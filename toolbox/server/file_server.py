@@ -68,7 +68,7 @@ class ServerConfig:
         return server_files
 
 
-def removeprefix(self: str, prefix: str, /) -> str:
+def removeprefix(self: str, prefix: str) -> str:
     if self.startswith(prefix):
         return self[len(prefix) :]
     else:
