@@ -10,6 +10,8 @@ from flask import (
     redirect,
     url_for,
 )
+import logging
+import base64
 from typing import Optional
 from http import HTTPStatus
 import netifaces
@@ -23,6 +25,11 @@ server = Blueprint(
 )
 
 
+class Color:
+    def green(s: str) -> str:
+        return f"\033[32m{s}\x1b[0m"
+
+
 @server.route("/shells/<name>")
 @server.route("/shells/<name>/<lport>")
 @server.route("/shells/<name>/<lhost>/<lport>")
@@ -34,6 +41,21 @@ def shell(name: str, lhost: Optional[str] = None, lport: Optional[str] = None):
     response = make_response(payload)
     response.headers["Content-Type"] = "text/plain"
     return response
+
+
+@server.route("/debug/", defaults={"namespace": None})
+@server.route("/debug/<path:namespace>")
+def debug(namespace):
+    value = request.args.get("value")
+    if value:
+        try:
+            value = base64.b32decode(value)
+        except:
+            value = f"Unknown base: {value}"
+    current_app.logger.info(
+        "debug=%s value=%s", Color.green(namespace), Color.green(value)
+    )
+    return make_response("", HTTPStatus.OK)
 
 
 @server.route("/", defaults={"server_path": ""})
@@ -66,6 +88,12 @@ def serve(
     app.config["ROOT_SERVE_DIRECTORY"] = root_serve_directory
     app.config["CONFIG_PATH"] = config_path
     app.config["TEMPLATES_AUTO_RELOAD"] = use_reloader
+
+    # TODO: Add middleware logging for IP, time, user agent details, highlighting on 404s etc.
+    # log = logging.getLogger("werkzeug")
+    # log.disabled = True
+
+    app.logger.setLevel(logging.INFO)
     app.register_blueprint(server)
 
     app.run(host=host, port=port, use_debugger=use_debugger, use_reloader=use_reloader)

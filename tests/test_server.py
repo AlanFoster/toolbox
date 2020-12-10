@@ -268,3 +268,20 @@ def test_shell_invalid_shells(client, path):
     response = client.get(path)
     assert response.status_code == HTTPStatus.NOT_FOUND
     assert b"The requested URL was not found on the server" in response.data
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "/debug/",
+        "/debug/?value=",
+        "/debug/?value=NBSWY3DPO5XXE3DE",
+        "/debug/foo?value=NBSWY3DPO5XXE3DE",
+        "/debug/foo/bar?value=NBSWY3DPO5XXE3DE",
+        "/debug/foo/bar?value=not_base32_value",
+    ],
+)
+def test_debug(client, path):
+    response = client.get(path)
+    assert response.status_code == HTTPStatus.OK
+    assert response.data == b""
