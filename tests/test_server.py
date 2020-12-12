@@ -275,10 +275,10 @@ def test_shell_invalid_shells(client, path):
     [
         "/debug/",
         "/debug/?value=",
-        "/debug/?value=NBSWY3DPO5XXE3DE",
-        "/debug/foo?value=NBSWY3DPO5XXE3DE",
-        "/debug/foo/bar?value=NBSWY3DPO5XXE3DE",
-        "/debug/foo/bar?value=not_base32_value",
+        "/debug/?value=aGVsbG8=",
+        "/debug/foo?value=aGVsbG8=",
+        "/debug/foo/bar?value=aGVsbG8=",
+        "/debug/foo/bar?value=not_base64_value",
     ],
 )
 def test_debug(client, path):

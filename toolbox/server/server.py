@@ -49,7 +49,7 @@ def debug(namespace):
     value = request.args.get("value")
     if value:
         try:
-            value = base64.b32decode(value)
+            value = base64.b64decode(value)
         except:
             value = f"Unknown base: {value}"
     current_app.logger.info(
