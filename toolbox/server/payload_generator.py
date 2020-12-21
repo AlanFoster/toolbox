@@ -29,7 +29,7 @@ class DataStore:
 
 
 class PayloadGenerator:
-    VALID_INTERFACES = ["tun0", "lo", "lo0"]
+    VALID_INTERFACES = ["tun0", "tun1", "lo", "lo0"]
 
     def __init__(self):
         pass
@@ -87,7 +87,7 @@ class PayloadGenerator:
     def _get_ip_address(self, interface: str) -> Optional[str]:
         try:
             return netifaces.ifaddresses(interface)[netifaces.AF_INET][0]["addr"]
-        except ValueError:
+        except (KeyError, ValueError):
             return None
 
     def _get_lhost(self, lhost: Optional[str]) -> str:

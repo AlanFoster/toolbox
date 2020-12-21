@@ -111,4 +111,5 @@ pytest --snapshot-update
 - Configure setup.py to install only the required source code + datafiles + licenses
 - Use gunicorn / uwsgi in 'production' mode
 - Add additional files:
-  - static pspy64
+  - Static pspy64
+  - Static Docker client
