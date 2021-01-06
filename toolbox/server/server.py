@@ -16,7 +16,13 @@ from typing import Optional
 from http import HTTPStatus
 import netifaces
 
-from .file_server import ServerConfig, FileServer
+from .file_server import (
+    ServerConfig,
+    FileServer,
+    ServerInvalidFilePath,
+    ServerDirectoryListing,
+    ServerFileResult,
+)
 from .payload_generator import PayloadGenerator, TEMPLATE_DIRECTORY
 
 
@@ -66,11 +72,29 @@ def serve_file(server_path):
         root_directory=current_app.config["ROOT_DIRECTORY"],
         config_path=current_app.config["CONFIG_PATH"],
     )
-    file_server = FileServer(
-        server_config=server_config, payload_generator=payload_generator
-    )
+    file_server = FileServer(server_config=server_config)
+    server_response = file_server.serve(server_path)
 
-    return file_server.serve(server_path)
+    if isinstance(server_response, ServerInvalidFilePath):
+        return abort(HTTPStatus.NOT_FOUND)
+
+    if isinstance(server_response, ServerDirectoryListing):
+        return render_template(
+            "views/index.html",
+            valid_shell_types=payload_generator.module_names,
+            default_lhost=payload_generator.default_lhost,
+            default_lport=payload_generator.default_lport,
+            files=server_response.files,
+            custom_files=server_response.custom_files,
+            server_path=server_path,
+        )
+
+    if isinstance(server_response, ServerFileResult):
+        response = make_response(server_response.content)
+        response.headers["Content-Type"] = "text/html; charset=utf-8"
+        return response
+
+    return abort(HTTPStatus.INTERNAL_SERVER_ERROR, f"{str(server_response.__class__)}")
 
 
 def serve(

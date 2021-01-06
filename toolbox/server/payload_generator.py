@@ -19,6 +19,7 @@ from pathlib import Path
 
 
 TEMPLATE_DIRECTORY = Path(__file__).parent / "templates"
+MODULE_DIRECTORY = TEMPLATE_DIRECTORY / "modules"
 
 
 @dataclass
@@ -41,20 +42,18 @@ class PayloadGenerator:
             return None
 
         # TODO: Decide if it would be better to remove render_template and call jinja or similar directly
-        payload = render_template(name, datastore=self._get_datastore(lhost, lport))
+        payload = render_template(
+            f"modules/{name}", datastore=self._get_datastore(lhost, lport)
+        )
         return payload
 
     def __contains__(self, name):
-        return name in self.template_names
+        return name in self.module_names
 
     @property
-    def template_names(self):
+    def module_names(self):
         # TODO: Decide if this should honor jinja's templates_auto_reload mechanism
-        return [
-            template.name
-            for template in Path(TEMPLATE_DIRECTORY).iterdir()
-            if template.name != "index.html"
-        ]
+        return [module.name for module in Path(MODULE_DIRECTORY).iterdir()]
 
     @property
     def default_lport(self) -> int:

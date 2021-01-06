@@ -4,7 +4,6 @@ from flask import (
     render_template,
     make_response,
     app,
-    abort,
     current_app,
     request,
     redirect,
@@ -13,11 +12,10 @@ from flask import (
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
-from http import HTTPStatus
 import netifaces
 import json
 from pathlib import Path
-from typing import List, Mapping
+from typing import List, Mapping, Union
 from .payload_generator import PayloadGenerator
 
 
@@ -27,11 +25,32 @@ ServerPathMap = Mapping[ServerPath, LocalPath]
 
 
 @dataclass
-class File:
-    server_path: str
+class ServerDirectoryItem:
+    server_path: ServerPath
     name: str
     is_dir: str
     is_file: str
+
+
+@dataclass
+class ServerInvalidFilePath:
+    pass
+
+
+@dataclass
+class ServerDirectoryListing:
+    files: List[ServerDirectoryItem]
+    custom_files: List[ServerDirectoryItem]
+    server_path: ServerPath
+
+
+@dataclass
+class ServerFileResult:
+    local_path: LocalPath
+    content: bytes
+
+
+ServerResponse = Union[ServerInvalidFilePath, ServerDirectoryListing, ServerFileResult]
 
 
 class ServerConfig:
@@ -76,11 +95,8 @@ def removeprefix(self: str, prefix: str) -> str:
 
 
 class FileServer:
-    def __init__(
-        self, server_config: ServerConfig, payload_generator: PayloadGenerator
-    ):
+    def __init__(self, server_config: ServerConfig):
         self.server_config = server_config
-        self.payload_generator = payload_generator
 
     def serve(self, server_path: ServerPath):
         custom_file = self._serve_custom_file_or_folder(server_path)
@@ -100,7 +116,7 @@ class FileServer:
         root_serve_directory = Path(current_app.config["ROOT_SERVE_DIRECTORY"])
         local_path = (root_serve_directory / server_path).resolve()
 
-        def calculate_file_server_path_func(file_path: Path):
+        def calculate_file_server_path_func(file_path: Path) -> ServerPath:
             return f"/{file_path.relative_to(root_serve_directory).as_posix()}"
 
         return self._serve_file_or_folder(
@@ -159,7 +175,7 @@ class FileServer:
         server_path: ServerPath,
         restricted_to_path: Path,
         calculate_file_server_path_func,
-    ):
+    ) -> ServerResponse:
         """
         Attempts to serve the given file or directory to the user.
 
@@ -167,21 +183,21 @@ class FileServer:
         If the local_path is a folder, it renders the directory contents
 
         To guard against arbitrary reads - the local_path must exist within the
-        restrict_to_path argument, otherwise a 404 is returned.
+        restrict_to_path argument, otherwise a ServerInvalidFilePath object is returned.
         """
         valid_child_path = (
             restricted_to_path in local_path.parents or local_path == restricted_to_path
         ) and local_path.exists()
         if not valid_child_path:
-            return abort(HTTPStatus.NOT_FOUND)
+            return ServerInvalidFilePath()
 
         if local_path.is_file():
-            return self._send_file(local_path, restricted_to_path)
+            return self._read_file(local_path, restricted_to_path)
         elif local_path.is_dir():
             files = []
             for child_path in local_path.iterdir():
                 files.append(
-                    File(
+                    ServerDirectoryItem(
                         server_path=calculate_file_server_path_func(child_path),
                         name=child_path.name,
                         is_dir=child_path.is_dir(),
@@ -190,23 +206,19 @@ class FileServer:
                 )
             files.sort(key=lambda file: file.name)
 
-            return render_template(
-                "index.html",
-                valid_shell_types=self.payload_generator.template_names,
-                default_lhost=self.payload_generator.default_lhost,
-                default_lport=self.payload_generator.default_lport,
+            return ServerDirectoryListing(
                 files=files,
                 custom_files=self._get_custom_files(),
                 server_path=server_path,
             )
         else:
-            return abort(HTTPStatus.NOT_FOUND)
+            return ServerInvalidFilePath()
 
-    def _get_custom_files(self) -> List[File]:
+    def _get_custom_files(self) -> List[ServerDirectoryItem]:
         custom_files = []
         for server_path, local_path in self.server_config.items():
             custom_files.append(
-                File(
+                ServerDirectoryItem(
                     server_path=server_path,
                     name=Path(server_path).name,
                     is_dir=local_path.is_dir(),
@@ -216,12 +228,12 @@ class FileServer:
         custom_files.sort(key=lambda file: file.name)
         return custom_files
 
-    def _send_file(self, local_path: LocalPath, restricted_to_path: Path):
+    def _read_file(self, local_path: LocalPath, restricted_to_path: Path):
         """
         Responds with the current file if it exists as a file
 
         To guard against arbitrary reads - the local_path must exist within the
-        restrict_to_path argument, otherwise a 404 is returned.
+        restrict_to_path argument, otherwise a ServerInvalidFilePath object is returned.
         """
         is_valid_file_path = (
             (
@@ -233,12 +245,10 @@ class FileServer:
         )
 
         if not is_valid_file_path:
-            return abort(HTTPStatus.NOT_FOUND)
+            return ServerInvalidFilePath()
 
         with open(local_path, "rb") as file:
             content = file.read()
-            return content
+            return ServerFileResult(local_path=local_path, content=content)
 
-        response = make_response(content)
-        response.headers["Content-Type"] = "text/plain"
-        return response
+        return ServerInvalidFilePath()

@@ -7,4 +7,4 @@ testpaths = [
 markers = "focus: mark a test as focused"
 
 [tool.black]
-exclude = "third_party"
+exclude = "third_party|toolbox/server/templates"
