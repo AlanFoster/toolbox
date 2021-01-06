@@ -3,33 +3,7 @@ from toolbox.server import server
 from pathlib import Path
 from flask import Flask
 from http import HTTPStatus
-import tempfile
-
-
-@pytest.fixture
-def client():
-    app = Flask(__name__, static_folder=None)
-    test_harness = Path(__file__).parent / "harnesses" / "simple"
-    app.config["ROOT_SERVE_DIRECTORY"] = test_harness / "serve"
-    app.config["ROOT_DIRECTORY"] = test_harness
-    app.config["CONFIG_PATH"] = test_harness / "config.json"
-    app.register_blueprint(server.server)
-
-    # app.run(port=8000)
-    with app.test_client() as client:
-        yield client
-
-
-# Open the given response in a browser to inspect the rendered html
-def open_response(response):
-    import subprocess
-    import time
-
-    with tempfile.NamedTemporaryFile(suffix=".html") as tmp:
-        tmp.write(response.data)
-        tmp.flush()
-        subprocess.run(["open", tmp.name])
-        time.sleep(1)
+import secrets
 
 
 def test_index_served_files(client):
@@ -37,25 +11,25 @@ def test_index_served_files(client):
     assert response.status_code == HTTPStatus.OK
 
     expected_served_files = [
-        b'<li><a href="/folder">folder/</a></li>',
-        b'<li><a href="/simple.txt">simple.txt</a></li>',
+        b'<a href="/folder">folder/</a>',
+        b'<a href="/simple.txt">simple.txt</a>',
     ]
 
     for link in expected_served_files:
         assert link in response.data
 
 
-def test_index_custom_files(client):
+def test_index_toolbox_files(client):
     response = client.get("/")
     assert response.status_code == HTTPStatus.OK
 
-    expected_custom_files = [
-        b'<li><a href="/enum_linux.sh">enum_linux.sh</a></li>',
-        b'<li><a href="/enum_windows.exe">enum_windows.exe</a></li>',
-        b'<li><a href="/my_custom_namespace">my_custom_namespace/</a></li>',
+    expected_toolbox_files = [
+        b'<a href="/enum_linux.sh">enum_linux.sh</a>',
+        b'<a href="/enum_windows.exe">enum_windows.exe</a>',
+        b'<a href="/my_custom_namespace">my_custom_namespace/</a>',
     ]
 
-    for link in expected_custom_files:
+    for link in expected_toolbox_files:
         assert link in response.data
 
 
@@ -64,9 +38,9 @@ def test_index_shells(client):
     assert response.status_code == HTTPStatus.OK
 
     expected_custom_files = [
-        b'<li><a href="/shells/shell.js">/shells/shell.js</a>',
-        b'<li><a href="/shells/shell.js/4444">/shells/shell.js/4444</a>',
-        b'<li><a href="/shells/shell.js/127.0.0.1/4444">/shells/shell.js/127.0.0.1/4444</a>',
+        b'<a href="/shells/shell.js">/shells/shell.js</a>',
+        b'<a href="/shells/shell.js/4444">/shells/shell.js/4444</a>',
+        b'<a href="/shells/shell.js/127.0.0.1/4444">/shells/shell.js/127.0.0.1/4444</a>',
     ]
 
     for link in expected_custom_files:
@@ -81,7 +55,7 @@ def test_index_shells(client):
         ("/folder/nested_folder/nested_child.txt", b"nested_child.txt content\n"),
     ],
 )
-def test_reading_served_files(client, path, expected_data):
+def test_reading_user_files(client, path, expected_data):
     response = client.get(path)
     assert response.status_code == HTTPStatus.OK
     assert response.data == expected_data
@@ -103,7 +77,7 @@ def test_reading_served_files(client, path, expected_data):
         ),
     ],
 )
-def test_viewing_server_folders(client, path, expected_links):
+def test_viewing_user_folders(client, path, expected_links):
     response = client.get(path)
     assert response.status_code == HTTPStatus.OK
     for link in expected_links:
@@ -117,7 +91,7 @@ def test_viewing_server_folders(client, path, expected_links):
         ("/enum_windows.exe", b"enum.exe content\n"),
     ],
 )
-def test_reading_custom_files(client, path, expected_data):
+def test_reading_toolbox_files(client, path, expected_data):
     response = client.get(path)
     assert response.status_code == HTTPStatus.OK
     assert response.data == expected_data
@@ -130,7 +104,7 @@ def test_reading_custom_files(client, path, expected_data):
         ("/my_custom_namespace/windows/enum.exe", b"enum.exe content\n"),
     ],
 )
-def test_reading_custom_files_with_namespace(client, path, expected_data):
+def test_reading_toolbox_files_with_namespace(client, path, expected_data):
     response = client.get(path)
     assert response.status_code == HTTPStatus.OK
     assert response.data == expected_data
@@ -142,20 +116,20 @@ def test_reading_custom_files_with_namespace(client, path, expected_data):
         (
             "/my_custom_namespace",
             [
-                b'<li><a href="/my_custom_namespace/linux">linux/</a></li>',
-                b'<li><a href="/my_custom_namespace/windows">windows/</a></li>',
+                b'<a href="/my_custom_namespace/linux">linux/</a>',
+                b'<a href="/my_custom_namespace/windows">windows/</a>',
             ],
         ),
         (
             "/my_custom_namespace/",
             [
-                b'<li><a href="/my_custom_namespace/linux">linux/</a></li>',
-                b'<li><a href="/my_custom_namespace/windows">windows/</a></li>',
+                b'<a href="/my_custom_namespace/linux">linux/</a>',
+                b'<a href="/my_custom_namespace/windows">windows/</a>',
             ],
         ),
         (
             "/my_custom_namespace/linux",
-            [b'<li><a href="/my_custom_namespace/linux/enum.sh">enum.sh</a></li>'],
+            [b'<a href="/my_custom_namespace/linux/enum.sh">enum.sh</a>'],
         ),
         (
             "/my_custom_namespace/windows",
@@ -163,7 +137,7 @@ def test_reading_custom_files_with_namespace(client, path, expected_data):
         ),
     ],
 )
-def test_exploring_custom_files_with_namespace(client, path, expected_links):
+def test_exploring_toolbox_files_with_namespaces(client, path, expected_links):
     response = client.get(path)
     assert response.status_code == HTTPStatus.OK
     for link in expected_links:
@@ -200,6 +174,7 @@ def test_requesting_missing_files(client, path):
         "/my_custom_namespace/../../../../../../../../../../../../../../../../../../etc/",
         "/my_custom_namespace/../../../../../../../../../../../../../../../../../../etc",
         "/my_custom_namespace/../arbitrary_file_read_test.txt",
+        "/my_custom_namespace/../../arbitrary_file_read_test.txt",
     ],
 )
 def test_security_against_arbitrary_file_read(client, path):
