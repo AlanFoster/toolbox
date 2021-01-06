@@ -2,42 +2,79 @@
 <title>Toolbox</title>
 <head>
     <link href="data:image/x-icon;base64,x" rel="icon" type="image/x-icon" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='bootstrap-4.0.0.min.css')}}" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous"/>
+    <script src="{{ url_for('static', filename='jquery-3.5.1.slim.min.js')}}" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+    <script src="{{ url_for('static', filename='popper-1.16.1.min.js')}}" integrity="sha384-9/reFTGAW83EW2RDu2S0VKaIzap3H66lZH81PoYlFhbGU+6BZp6G7niu735Sk7lN" crossorigin="anonymous"></script>
+    <script src="{{ url_for('static', filename='bootstrap-4.5.3.min.js')}}" integrity="sha384-w1Q4orYjBQndcko6MimVbzY0tgp4pWB4lZ7lr30WKz0vr/aWKhXdBNmNb5D92v7s" crossorigin="anonymous"></script>
 </head>
 <body>
 
-<h2>Directory listing for /{{server_path}}</h2>
-<hr>
+<main role="main" class="container mt-3">
+    <h2>Directory listing for /{{server_path}}</h2>
+    <hr />
 
-<ul>
-{%- for file in files %}
-    <li><a href="{{file.server_path}}">{{file.name}}{{ '/' if file.is_dir else '' }}</a></li>
-{%- endfor %}
-</ul>
-<hr>
+    {% include 'views/upload_form.html' %}
 
-{%- if server_path == '' %}
-    <h2>Inbuilt files</h2>
-    <hr>
-
-    <ul>
-        {%- for file in custom_files %}
-            <li><a href="{{file.server_path}}">{{file.name}}{{ '/' if file.is_dir else '' }}</a></li>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Name</th>
+            </tr>
+        </thead>
+        <tbody>
+        {%- for file in view_model.directory_listing.user_files %}
+            <tr>
+                <td>{{loop.index}}</td>
+                <td>
+                    <a href="{{file.server_path}}">{{file.name}}{{ '/' if file.is_dir else '' }}</a>
+                </td>
+            </tr>
         {%- endfor %}
-        </ul>
-    <hr>
+        </tbody>
+    </table>
 
+    {%- if view_model.directory_listing.server_path == '' %}
+        <h2>Inbuilt files</h2>
 
-    <h2>Shells</h2>
-    <hr>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Name</th>
+                </tr>
+            </thead>
+            <tbody>
+            {%- for file in view_model.directory_listing.toolbox_files %}
+                <tr>
+                <td>{{loop.index}}</td>
+                <td>
+                    <a href="{{file.server_path}}">{{file.name}}{{ '/' if file.is_dir else '' }}</a>
+                </td>
+            </tr>
+            {%- endfor %}
+            </tbody>
+        </table>
 
-    {%- for valid_shell_type in valid_shell_types %}
-        <h3>{{ valid_shell_type }}</h3>
-        <ul>
-            <li><a href="/shells/{{valid_shell_type}}">/shells/{{valid_shell_type}}</a> - running on default host/port {{default_lhost}} {{default_lport}}</li>
-            <li><a href="/shells/{{valid_shell_type}}/{{default_lport}}">/shells/{{valid_shell_type}}/{{default_lport}}</a> - custom port</a></li>
-            <li><a href="/shells/{{valid_shell_type}}/{{default_lhost}}/{{default_lport}}">/shells/{{valid_shell_type}}/{{default_lhost}}/{{default_lport}}</a> - custom host and port</li>
-        </ul>
-    {%- endfor %}
-{%- endif %}
+        <h2>Shells</h2>
+        <hr>
+
+        {% set default_lhost = view_model.payload_generator.default_lhost %}
+        {% set default_lport = view_model.payload_generator.default_lport %}
+        {%- for module_name in view_model.payload_generator.module_names %}
+            <h3>{{ module_name }}</h3>
+            <ul>
+                <li><a href="/shells/{{module_name}}">/shells/{{module_name}}</a> - running on default host/port {{default_lhost}} {{default_lport}}</li>
+                <li><a href="/shells/{{module_name}}/{{default_lport}}">/shells/{{module_name}}/{{default_lport}}</a> - custom port</li>
+                <li><a href="/shells/{{module_name}}/{{default_lhost}}/{{default_lport}}">/shells/{{module_name}}/{{default_lhost}}/{{default_lport}}</a> - custom host and port</li>
+            </ul>
+        {%- endfor %}
+    {%- endif %}
+</main>
+<script>
+    $(function () {
+        $('[data-toggle="tooltip"]').tooltip()
+    })
+</script>
 </body>
 </html>

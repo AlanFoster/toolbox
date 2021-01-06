@@ -17,7 +17,7 @@ import json
 from pathlib import Path
 from typing import List, Mapping, Union
 from .payload_generator import PayloadGenerator
-
+from .file_manager import FileManager
 
 ServerPath = str
 LocalPath = Path
@@ -39,8 +39,8 @@ class ServerInvalidFilePath:
 
 @dataclass
 class ServerDirectoryListing:
-    files: List[ServerDirectoryItem]
-    custom_files: List[ServerDirectoryItem]
+    user_files: List[ServerDirectoryItem]
+    toolbox_files: List[ServerDirectoryItem]
     server_path: ServerPath
 
 
@@ -54,8 +54,11 @@ ServerResponse = Union[ServerInvalidFilePath, ServerDirectoryListing, ServerFile
 
 
 class ServerConfig:
-    def __init__(self, root_directory: str, config_path: str):
-        self.root_directory = root_directory
+    def __init__(
+        self, root_toolbox_directory: str, config_path: str, file_manager: FileManager
+    ):
+        self.root_toolbox_directory = root_toolbox_directory
+        self.file_manager: FileManager = file_manager
         self.server_files: ServerPathMap = self._parse_config(config_path)
 
     def get_local_path(self, server_path: ServerPath) -> Optional[LocalPath]:
@@ -69,7 +72,7 @@ class ServerConfig:
 
     def _parse_config(self, config_path: str) -> ServerPathMap:
         server_files = {}
-        with open(config_path) as config_file:
+        with self.file_manager.open_toolbox_file(config_path) as config_file:
             config = json.load(config_file)
 
         for config_value in config["server"]:
@@ -79,7 +82,7 @@ class ServerConfig:
                 raise ValueError(
                     f"Duplicate server_path '{server_path}' for local_path '{local_path}'"
                 )
-            local_path = self.root_directory / local_path
+            local_path = self.root_toolbox_directory / local_path
             if not local_path.exists():
                 raise ValueError(f"local_path '{local_path}' does not exist.")
 
@@ -94,36 +97,112 @@ def removeprefix(self: str, prefix: str) -> str:
         return self[:]
 
 
-class FileServer:
+class UserFileServer:
     def __init__(self, server_config: ServerConfig):
         self.server_config = server_config
+        self.file_manager = server_config.file_manager
 
-    def serve(self, server_path: ServerPath):
-        custom_file = self._serve_custom_file_or_folder(server_path)
-        if custom_file is not None:
-            return custom_file
-
-        return self._serve_root_file_or_folder(server_path)
-
-    def _serve_root_file_or_folder(self, server_path: ServerPath):
+    def serve_user_file_or_folder(self, server_path: ServerPath):
         """
-        Serve a file or folder from the root serve directory, i.e. the arbitrary
-        files that the user has specified to serve.
+        Serve a file or folder from user specified files
 
         If the given file or folder does not exist, a 404 is returned
         """
-        restricted_to_path = Path(current_app.config["ROOT_SERVE_DIRECTORY"])
-        root_serve_directory = Path(current_app.config["ROOT_SERVE_DIRECTORY"])
-        local_path = (root_serve_directory / server_path).resolve()
+        root_user_directory = Path(current_app.config["ROOT_USER_DIRECTORY"])
+        local_path = (root_user_directory / server_path).resolve()
 
         def calculate_file_server_path_func(file_path: Path) -> ServerPath:
-            return f"/{file_path.relative_to(root_serve_directory).as_posix()}"
+            return f"/{file_path.relative_to(root_user_directory).as_posix()}"
 
         return self._serve_file_or_folder(
-            local_path, server_path, restricted_to_path, calculate_file_server_path_func
+            local_path, server_path, calculate_file_server_path_func
         )
 
-    def _serve_custom_file_or_folder(self, server_path: ServerPath):
+    # TODO: Split out user / toolbox files, this does both currently
+    def _serve_file_or_folder(
+        self,
+        local_path: LocalPath,
+        server_path: ServerPath,
+        calculate_file_server_path_func,
+    ) -> ServerResponse:
+        """
+        Attempts to serve the given file or directory to the user.
+
+        If the local_path is a file, it sends a file to the user.
+        If the local_path is a folder, it renders the directory contents
+
+        To guard against arbitrary reads - the local_path must exist within the
+        restrict_to_path argument, otherwise a ServerInvalidFilePath object is returned.
+        """
+
+        valid_child_path = (
+            self.file_manager.is_allowed_user_file_path(local_path)
+        ) and local_path.exists()
+        if not valid_child_path:
+            return ServerInvalidFilePath()
+
+        if local_path.is_file():
+            return self._read_user_file(local_path)
+        elif local_path.is_dir():
+            files = []
+            for child_path in local_path.iterdir():
+                files.append(
+                    ServerDirectoryItem(
+                        server_path=calculate_file_server_path_func(child_path),
+                        name=child_path.name,
+                        is_dir=child_path.is_dir(),
+                        is_file=child_path.is_file(),
+                    )
+                )
+            files.sort(key=lambda file: file.name)
+
+            return ServerDirectoryListing(
+                user_files=files,
+                toolbox_files=self._get_toolbox_files(),
+                server_path=server_path,
+            )
+        else:
+            return ServerInvalidFilePath()
+
+    def _get_toolbox_files(self) -> List[ServerDirectoryItem]:
+        toolbox_files = []
+        for server_path, local_path in self.server_config.items():
+            toolbox_files.append(
+                ServerDirectoryItem(
+                    server_path=server_path,
+                    name=Path(server_path).name,
+                    is_dir=local_path.is_dir(),
+                    is_file=local_path.is_file(),
+                )
+            )
+        toolbox_files.sort(key=lambda file: file.name)
+        return toolbox_files
+
+    def _read_user_file(self, local_path: LocalPath):
+        """
+        Responds with the current file if it exists as a file
+        """
+        is_valid_path = (
+            self.file_manager.is_allowed_user_file_path(local_path)
+            and local_path.exists()
+            and local_path.is_file()
+        )
+        if not is_valid_path:
+            return ServerInvalidFilePath()
+
+        with self.file_manager.open_user_file(local_path, "rb") as file:
+            content = file.read()
+            return ServerFileResult(local_path=local_path, content=content)
+
+        return ServerInvalidFilePath()
+
+
+class ToolboxFileServer:
+    def __init__(self, server_config: ServerConfig):
+        self.server_config = server_config
+        self.file_manager = server_config.file_manager
+
+    def serve_toolbox_file_or_folder(self, server_path: ServerPath):
         """
         Serve an inbuilt / custom configured file or folder.
 
@@ -143,7 +222,6 @@ class FileServer:
         if local_path_mapping is None:
             return None
 
-        restricted_to_path = Path(local_path_mapping)
         local_path = None
         if server_path_namespace is None:
             local_path = local_path_mapping
@@ -165,15 +243,14 @@ class FileServer:
         return self._serve_file_or_folder(
             local_path,
             server_path,
-            restricted_to_path,
             calculate_file_server_path_func,
         )
 
+    # TODO: Split out user / toolbox files, this does both currently
     def _serve_file_or_folder(
         self,
         local_path: LocalPath,
         server_path: ServerPath,
-        restricted_to_path: Path,
         calculate_file_server_path_func,
     ) -> ServerResponse:
         """
@@ -185,14 +262,15 @@ class FileServer:
         To guard against arbitrary reads - the local_path must exist within the
         restrict_to_path argument, otherwise a ServerInvalidFilePath object is returned.
         """
+
         valid_child_path = (
-            restricted_to_path in local_path.parents or local_path == restricted_to_path
+            self.file_manager.is_allowed_toolbox_file_path(local_path)
         ) and local_path.exists()
         if not valid_child_path:
             return ServerInvalidFilePath()
 
         if local_path.is_file():
-            return self._read_file(local_path, restricted_to_path)
+            return self._read_toolbox_file(local_path)
         elif local_path.is_dir():
             files = []
             for child_path in local_path.iterdir():
@@ -207,17 +285,17 @@ class FileServer:
             files.sort(key=lambda file: file.name)
 
             return ServerDirectoryListing(
-                files=files,
-                custom_files=self._get_custom_files(),
+                user_files=files,
+                toolbox_files=self._get_toolbox_files(),
                 server_path=server_path,
             )
         else:
             return ServerInvalidFilePath()
 
-    def _get_custom_files(self) -> List[ServerDirectoryItem]:
-        custom_files = []
+    def _get_toolbox_files(self) -> List[ServerDirectoryItem]:
+        toolbox_files = []
         for server_path, local_path in self.server_config.items():
-            custom_files.append(
+            toolbox_files.append(
                 ServerDirectoryItem(
                     server_path=server_path,
                     name=Path(server_path).name,
@@ -225,30 +303,45 @@ class FileServer:
                     is_file=local_path.is_file(),
                 )
             )
-        custom_files.sort(key=lambda file: file.name)
-        return custom_files
+        toolbox_files.sort(key=lambda file: file.name)
+        return toolbox_files
 
-    def _read_file(self, local_path: LocalPath, restricted_to_path: Path):
+    def _read_toolbox_file(self, local_path: LocalPath):
         """
         Responds with the current file if it exists as a file
-
-        To guard against arbitrary reads - the local_path must exist within the
-        restrict_to_path argument, otherwise a ServerInvalidFilePath object is returned.
         """
-        is_valid_file_path = (
-            (
-                restricted_to_path in local_path.parents
-                or local_path == restricted_to_path
-            )
+        is_valid_path = (
+            self.file_manager.is_allowed_toolbox_file_path(local_path)
             and local_path.exists()
             and local_path.is_file()
         )
-
-        if not is_valid_file_path:
+        if not is_valid_path:
             return ServerInvalidFilePath()
 
-        with open(local_path, "rb") as file:
+        is_allowed_path = any(
+            allowed_local_path in local_path.parents
+            for _server_path, allowed_local_path in self.server_config.items()
+        )
+        if not is_allowed_path:
+            return ServerInvalidFilePath()
+
+        with self.file_manager.open_toolbox_file(local_path, "rb") as file:
             content = file.read()
             return ServerFileResult(local_path=local_path, content=content)
 
         return ServerInvalidFilePath()
+
+
+class FileServer:
+    def __init__(self, server_config: ServerConfig):
+        self.server_config = server_config
+        self.file_manager = server_config.file_manager
+
+    def serve(self, server_path: ServerPath):
+        toolbox_file_server = ToolboxFileServer(server_config=self.server_config)
+        toolbox_file = toolbox_file_server.serve_toolbox_file_or_folder(server_path)
+        if toolbox_file is not None:
+            return toolbox_file
+
+        user_file_server = UserFileServer(server_config=self.server_config)
+        return user_file_server.serve_user_file_or_folder(server_path)

@@ -51,16 +51,16 @@ def cli():
     callback=validate_port_permissions,
     help="the port to serve from",
 )
-@click.argument("root_serve_directory", required=True, callback=validate_directory)
-def serve(host, port, debug, reload, verbose, root_serve_directory):
-    root_directory = Path(__file__).parent.parent
+@click.argument("root_user_directory", required=True, callback=validate_directory)
+def serve(host, port, debug, reload, verbose, root_user_directory):
+    root_toolbox_directory = Path(__file__).parent.parent
 
     server.serve(
         host=host,
         port=port,
         verbose=verbose,
-        root_directory=root_directory,
-        root_serve_directory=root_serve_directory,
+        root_toolbox_directory=root_toolbox_directory,
+        root_user_directory=root_user_directory,
         config_path=Path(__file__).parent / "config.json",
         use_debugger=debug,
         use_reloader=reload,
