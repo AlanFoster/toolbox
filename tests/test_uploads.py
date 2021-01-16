@@ -13,6 +13,7 @@ import builtins
 from pytest_mock import MockerFixture
 from pathlib import Path
 
+
 def extract_token_id(response, file_name):
     assert response.status_code == HTTPStatus.OK
 
@@ -96,6 +97,7 @@ def test_upload_file(mocker: MockerFixture, app, client, req_ctx):
         Path("./tests/harnesses/simple/serve/test_upload_file.txt").resolve(), "wb"
     )
 
+
 @pytest.mark.parametrize(
     "file_name",
     [
@@ -134,6 +136,7 @@ def test_local_file_inclusion(mocker: MockerFixture, app, client, req_ctx, file_
 
     assert response.status_code == HTTPStatus.BAD_REQUEST
     assert response.data == b'{ "error": "invalid path" }\n'
+
 
 def test_upload_token_creation_invalid_token(
     mocker: MockerFixture, app, client, req_ctx

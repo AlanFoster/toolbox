@@ -57,7 +57,7 @@ You can now visit the running server at `http://localhost:8000`
 
 By default the server supports the following files:
 
-- [Payloads](toolbox/server/templates)
+- [Payloads](toolbox/server/modules)
 - [Common tools](toolbox/config.json)
 
 ## Contributing

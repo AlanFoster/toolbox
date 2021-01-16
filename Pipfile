@@ -14,6 +14,7 @@ netifaces = "==0.10.9"
 flask = "==1.1.2"
 flask-wtf = "0.14.3"
 pytest-mock = "*"
+beautifulsoup4 = "*"
 
 [requires]
 python_version = "3.9"

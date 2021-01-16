@@ -18,16 +18,20 @@ from pathlib import Path
 from typing import List, Mapping, Union
 from .payload_generator import PayloadGenerator
 from .file_manager import FileManager
+from datetime import datetime
 
 ServerPath = str
 LocalPath = Path
 ServerPathMap = Mapping[ServerPath, LocalPath]
+Bytes = int
 
 
 @dataclass
 class ServerDirectoryItem:
     server_path: ServerPath
     name: str
+    modified_at: str
+    size: Bytes
     is_dir: str
     is_file: str
 
@@ -51,6 +55,18 @@ class ServerFileResult:
 
 
 ServerResponse = Union[ServerInvalidFilePath, ServerDirectoryListing, ServerFileResult]
+
+
+def as_server_directory_item(server_path, local_path) -> ServerDirectoryItem:
+    stat = local_path.stat()
+    return ServerDirectoryItem(
+        server_path=server_path,
+        name=Path(server_path).name,
+        modified_at=datetime.fromtimestamp(stat.st_mtime),
+        size=stat.st_size,
+        is_dir=local_path.is_dir(),
+        is_file=local_path.is_file(),
+    )
 
 
 class ServerConfig:
@@ -147,11 +163,9 @@ class UserFileServer:
             files = []
             for child_path in local_path.iterdir():
                 files.append(
-                    ServerDirectoryItem(
+                    as_server_directory_item(
                         server_path=calculate_file_server_path_func(child_path),
-                        name=child_path.name,
-                        is_dir=child_path.is_dir(),
-                        is_file=child_path.is_file(),
+                        local_path=child_path,
                     )
                 )
             files.sort(key=lambda file: file.name)
@@ -168,12 +182,7 @@ class UserFileServer:
         toolbox_files = []
         for server_path, local_path in self.server_config.items():
             toolbox_files.append(
-                ServerDirectoryItem(
-                    server_path=server_path,
-                    name=Path(server_path).name,
-                    is_dir=local_path.is_dir(),
-                    is_file=local_path.is_file(),
-                )
+                as_server_directory_item(server_path=server_path, local_path=local_path)
             )
         toolbox_files.sort(key=lambda file: file.name)
         return toolbox_files
@@ -246,7 +255,6 @@ class ToolboxFileServer:
             calculate_file_server_path_func,
         )
 
-    # TODO: Split out user / toolbox files, this does both currently
     def _serve_file_or_folder(
         self,
         local_path: LocalPath,
@@ -275,14 +283,11 @@ class ToolboxFileServer:
             files = []
             for child_path in local_path.iterdir():
                 files.append(
-                    ServerDirectoryItem(
+                    as_server_directory_item(
                         server_path=calculate_file_server_path_func(child_path),
-                        name=child_path.name,
-                        is_dir=child_path.is_dir(),
-                        is_file=child_path.is_file(),
+                        local_path=child_path,
                     )
                 )
-            files.sort(key=lambda file: file.name)
 
             return ServerDirectoryListing(
                 user_files=files,
@@ -296,13 +301,9 @@ class ToolboxFileServer:
         toolbox_files = []
         for server_path, local_path in self.server_config.items():
             toolbox_files.append(
-                ServerDirectoryItem(
-                    server_path=server_path,
-                    name=Path(server_path).name,
-                    is_dir=local_path.is_dir(),
-                    is_file=local_path.is_file(),
-                )
+                as_server_directory_item(server_path=server_path, local_path=local_path)
             )
+
         toolbox_files.sort(key=lambda file: file.name)
         return toolbox_files
 
@@ -319,7 +320,7 @@ class ToolboxFileServer:
             return ServerInvalidFilePath()
 
         is_allowed_path = any(
-            allowed_local_path in local_path.parents
+            allowed_local_path in local_path.parents or allowed_local_path == local_path
             for _server_path, allowed_local_path in self.server_config.items()
         )
         if not is_allowed_path:

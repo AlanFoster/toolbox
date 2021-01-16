@@ -13,48 +13,18 @@
     <h2>Directory listing for /{{server_path}}</h2>
     <hr />
 
-    {% include 'views/upload_form.html' %}
+    {% include 'views/_upload_form.html' %}
 
-    <table class="table">
-        <thead>
-            <tr>
-                <th>#</th>
-                <th>Name</th>
-            </tr>
-        </thead>
-        <tbody>
-        {%- for file in view_model.directory_listing.user_files %}
-            <tr>
-                <td>{{loop.index}}</td>
-                <td>
-                    <a href="{{file.server_path}}">{{file.name}}{{ '/' if file.is_dir else '' }}</a>
-                </td>
-            </tr>
-        {%- endfor %}
-        </tbody>
-    </table>
+    {% with files=view_model.directory_listing.user_files %}
+        {% include "views/_directory_list.html" %}
+    {% endwith %}
 
     {%- if view_model.directory_listing.server_path == '' %}
         <h2>Inbuilt files</h2>
 
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Name</th>
-                </tr>
-            </thead>
-            <tbody>
-            {%- for file in view_model.directory_listing.toolbox_files %}
-                <tr>
-                <td>{{loop.index}}</td>
-                <td>
-                    <a href="{{file.server_path}}">{{file.name}}{{ '/' if file.is_dir else '' }}</a>
-                </td>
-            </tr>
-            {%- endfor %}
-            </tbody>
-        </table>
+        {% with files=view_model.directory_listing.toolbox_files %}
+            {% include "views/_directory_list.html" %}
+        {% endwith %}
 
         <h2>Shells</h2>
         <hr>

@@ -25,6 +25,7 @@ from .file_server import (
     ServerDirectoryListing,
     ServerFileResult,
 )
+from . import formatters
 from .payload_generator import PayloadGenerator, TEMPLATE_DIRECTORY
 from flask_wtf.file import FileField, FileRequired
 from werkzeug.utils import secure_filename
@@ -76,6 +77,7 @@ class Color:
 server = Blueprint(
     "serve", __name__, template_folder=TEMPLATE_DIRECTORY, static_folder=None
 )
+server.app_template_filter("pretty_date")(formatters.pretty_date)
 
 csrf = CSRFProtect()
 
@@ -131,7 +133,9 @@ def uploads():
         new_file_path = Path(current_app.config["ROOT_USER_DIRECTORY"]) / file_name
 
         if not file_manager.is_allowed_user_file_path(new_file_path):
-            return make_response('{ "error": "invalid path" }\n', HTTPStatus.BAD_REQUEST)
+            return make_response(
+                '{ "error": "invalid path" }\n', HTTPStatus.BAD_REQUEST
+            )
 
         with file_manager.open_user_file(new_file_path, "wb") as new_file:
             current_app.logger.info(
@@ -139,7 +143,7 @@ def uploads():
             )
             new_file.write(file.read())
 
-        # upload_tokens.pop(upload_token_id, None)
+        upload_tokens.pop(upload_token_id, None)
         return make_response('{ "success": true }\n', HTTPStatus.CREATED)
 
     return make_response(upload_form.errors, HTTPStatus.BAD_REQUEST)

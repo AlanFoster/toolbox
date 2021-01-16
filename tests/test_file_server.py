@@ -4,47 +4,51 @@ from pathlib import Path
 from flask import Flask
 from http import HTTPStatus
 import secrets
+from bs4 import BeautifulSoup
 
 
-def test_index_served_files(client):
+def assert_response_has_link(response, **options):
+    parsed = BeautifulSoup(response.data, features="html.parser")
+    match = parsed.find_all("a", **options)
+    assert len(match) > 0
+
+
+@pytest.mark.parametrize(
+    "href,name",
+    [("/folder", "folder/"), ("/simple.txt", "simple.txt")],
+)
+def test_index_served_files(client, href, name):
     response = client.get("/")
     assert response.status_code == HTTPStatus.OK
-
-    expected_served_files = [
-        b'<a href="/folder">folder/</a>',
-        b'<a href="/simple.txt">simple.txt</a>',
-    ]
-
-    for link in expected_served_files:
-        assert link in response.data
+    assert_response_has_link(response, href=href, string=name)
 
 
-def test_index_toolbox_files(client):
+@pytest.mark.parametrize(
+    "href,name",
+    [
+        ("/enum_linux.sh", "enum_linux.sh"),
+        ("/enum_windows.exe", "enum_windows.exe"),
+        ("/my_custom_namespace", "my_custom_namespace/"),
+    ],
+)
+def test_index_toolbox_files(client, href, name):
     response = client.get("/")
     assert response.status_code == HTTPStatus.OK
-
-    expected_toolbox_files = [
-        b'<a href="/enum_linux.sh">enum_linux.sh</a>',
-        b'<a href="/enum_windows.exe">enum_windows.exe</a>',
-        b'<a href="/my_custom_namespace">my_custom_namespace/</a>',
-    ]
-
-    for link in expected_toolbox_files:
-        assert link in response.data
+    assert_response_has_link(response, href=href, string=name)
 
 
-def test_index_shells(client):
+@pytest.mark.parametrize(
+    "href,name",
+    [
+        ("/shells/shell.js", "/shells/shell.js"),
+        ("/shells/shell.js/4444", "/shells/shell.js/4444"),
+        ("/shells/shell.js/127.0.0.1/4444", "/shells/shell.js/127.0.0.1/4444"),
+    ],
+)
+def test_index_shells(client, href, name):
     response = client.get("/")
     assert response.status_code == HTTPStatus.OK
-
-    expected_custom_files = [
-        b'<a href="/shells/shell.js">/shells/shell.js</a>',
-        b'<a href="/shells/shell.js/4444">/shells/shell.js/4444</a>',
-        b'<a href="/shells/shell.js/127.0.0.1/4444">/shells/shell.js/127.0.0.1/4444</a>',
-    ]
-
-    for link in expected_custom_files:
-        assert link in response.data
+    assert_response_has_link(response, href=href, string=name)
 
 
 @pytest.mark.parametrize(
