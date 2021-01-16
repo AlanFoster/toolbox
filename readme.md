@@ -21,6 +21,21 @@ Verify it works:
 python3 toolbox.py --help
 ```
 
+## Using Docker
+
+
+Build the image:
+
+```
+docker build -t toolbox .
+```
+
+Example usage:
+
+```
+docker run -it --rm -p 8000:8000 toolbox /bin/sh -c "python toolbox.py serve -p 8000 ."
+```
+
 ## Running
 
 ### Server

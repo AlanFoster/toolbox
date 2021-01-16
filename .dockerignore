@@ -1,0 +1,15 @@
+*
+!bin
+!third_party/LinEnum/LinEnum.sh
+!third_party/LinEnum/LICENSE
+!third_party/privilege-escalation-awesome-scripts-suite/linPEAS/linpeas.sh
+!third_party/privilege-escalation-awesome-scripts-suite/winPEAS/winPEASbat/winPEAS.bat
+!third_party/privilege-escalation-awesome-scripts-suite/LICENSE
+!third_party/static-binaries/binaries
+!third_party/static-binaries/LICENSE
+!toolbox
+!Pipfile
+!Pipfile.lock
+!requirements.txt
+!setup.py
+!toolbox.py
