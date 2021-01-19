@@ -37,6 +37,7 @@ from dataclasses import dataclass
 from typing import Dict
 import secrets
 from http import HTTPStatus
+from .interfaces import allowed_interfaces, get_ip_address
 
 
 class UploadForm(FlaskForm):
@@ -226,5 +227,14 @@ def serve(
 
     app.logger.setLevel(logging.INFO)
     app.register_blueprint(server)
+
+    available_interfaces = [
+        (interface, get_ip_address(interface)) for interface in allowed_interfaces()
+    ]
+
+    print(f" * Useful interfaces:")
+    for (interface, ip) in available_interfaces:
+        if ip is not None:
+            print(f" * {Color.green(interface).rjust(20)} {Color.green(ip.rjust(20))}")
 
     app.run(host=host, port=port, use_debugger=use_debugger, use_reloader=use_reloader)

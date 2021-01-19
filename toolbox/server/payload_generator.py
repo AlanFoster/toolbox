@@ -13,9 +13,8 @@ from flask import (
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
-import ipaddress
-import netifaces
 from pathlib import Path
+from .interfaces import get_ip_address, is_valid_ipv4_address, allowed_interfaces
 
 
 TEMPLATE_DIRECTORY = Path(__file__).parent / "templates"
@@ -61,12 +60,12 @@ class PayloadGenerator:
 
     @property
     def default_lhost(self) -> str:
-        for interface in PayloadGenerator.VALID_INTERFACES:
-            result = self._get_ip_address(interface)
+        for interface in allowed_interfaces():
+            result = get_ip_address(interface)
             if result is not None:
                 return result
         raise ValueError(
-            f"Unable to get ip address for default interfaces: '{str.join(PayloadGenerator.VALID_INTERFACES, ', ')}'"
+            f"Unable to get ip address for default interfaces: '{str.join(allowed_interfaces(), ', ')}'"
         )
 
     def _get_datastore(self, lhost: Optional[str], lport: Optional[str]) -> DataStore:
@@ -76,30 +75,17 @@ class PayloadGenerator:
             srvhost_url=request.host_url,
         )
 
-    def _is_valid_ipv4_address(self, ip: str) -> bool:
-        try:
-            ipaddress.ip_address(ip)
-            return True
-        except ValueError:
-            return False
-
-    def _get_ip_address(self, interface: str) -> Optional[str]:
-        try:
-            return netifaces.ifaddresses(interface)[netifaces.AF_INET][0]["addr"]
-        except (KeyError, ValueError):
-            return None
-
     def _get_lhost(self, lhost: Optional[str]) -> str:
         if lhost is None:
             return self.default_lhost()
 
-        if lhost in PayloadGenerator.VALID_INTERFACES:
-            address = self._get_ip_address(lhost)
+        if lhost in allowed_interfaces():
+            address = get_ip_address(lhost)
             if address is None:
                 raise ValueError(f"interface not found: '{lhost}'")
             return address
 
-        if self.is_valid_ipv4_address(lhost):
+        if is_valid_ipv4_address(lhost):
             return lhost
 
         raise ValueError(f"Unexpected lhost: '{lhost}'")
