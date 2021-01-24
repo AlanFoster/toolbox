@@ -41,6 +41,10 @@ def app():
     def csrf_token():
         return generate_csrf()
 
+    @make_app.auth.verify_password
+    def verify_password(username, password) -> bool:
+        return True
+
     return app
 
 

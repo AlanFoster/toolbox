@@ -8,6 +8,7 @@ def serve(
     verbose,
     host,
     port,
+    password,
     root_toolbox_directory,
     root_user_directory,
     config_path,
@@ -18,6 +19,7 @@ def serve(
         host=host,
         port=port,
         verbose=verbose,
+        password=password,
         root_toolbox_directory=root_toolbox_directory,
         root_user_directory=root_user_directory,
         config_path=config_path,
@@ -28,13 +30,13 @@ def serve(
         (interface, get_ip_address(interface)) for interface in allowed_interfaces()
     ]
 
-    interface_details = ""
-    interface_details += " * Useful interfaces:\n"
+    server_details = ""
+    server_details += f" * Useful interfaces:\n"
     for (interface, ip) in available_interfaces:
         if ip is not None:
-            interface_details += (
+            server_details += (
                 f" * {Color.green(interface).rjust(20)} {Color.green(ip.rjust(20))}\n"
             )
 
-    print(interface_details)
+    print(server_details)
     run_simple(host, port, app, use_debugger=use_debugger, use_reloader=True)

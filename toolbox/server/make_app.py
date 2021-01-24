@@ -29,7 +29,7 @@ from . import formatters
 from .color import Color
 from .payload_generator import PayloadGenerator, TEMPLATE_DIRECTORY
 from flask_wtf.file import FileField, FileRequired
-from werkzeug.utils import secure_filename
+from werkzeug.security import generate_password_hash, check_password_hash
 from pathlib import Path
 from flask_wtf import FlaskForm
 from wtforms import StringField
@@ -39,6 +39,7 @@ from typing import Dict
 import secrets
 from http import HTTPStatus
 from .interfaces import allowed_interfaces, get_ip_address
+from flask_httpauth import HTTPBasicAuth
 
 
 class UploadForm(FlaskForm):
@@ -67,6 +68,12 @@ class IndexViewModel:
     upload_token: UploadToken
 
 
+@dataclass
+class User:
+    username: str
+    password: str
+
+
 upload_tokens: Dict[UploadTokenId, UploadToken] = {}
 
 server = Blueprint(
@@ -75,11 +82,13 @@ server = Blueprint(
 server.app_template_filter("pretty_date")(formatters.pretty_date)
 
 csrf = CSRFProtect()
+auth = HTTPBasicAuth()
 
 
 @server.route("/shells/<name>")
 @server.route("/shells/<name>/<lport>")
 @server.route("/shells/<name>/<lhost>/<lport>")
+@auth.login_required
 def shell(name: str, lhost: Optional[str] = None, lport: Optional[str] = None):
     payload_generator = PayloadGenerator()
     payload = payload_generator.generate(name=name, lhost=lhost, lport=lport)
@@ -146,6 +155,7 @@ def uploads():
 
 @server.route("/", defaults={"server_path": ""}, methods=["GET", "POST"])
 @server.route("/<path:server_path>", methods=["GET", "POST"])
+@auth.login_required
 def index(server_path):
     payload_generator = PayloadGenerator()
     file_manager = FileManager(
@@ -196,12 +206,13 @@ def make_app(
     verbose,
     host,
     port,
+    password,
     root_toolbox_directory,
     root_user_directory,
     config_path,
     use_debugger=False,
     use_reloader=False,
-):
+) -> Flask:
     app = Flask(
         __name__,
         static_url_path="/assets",
@@ -214,6 +225,12 @@ def make_app(
     secret_key = secrets.token_bytes(32)
     app.secret_key = secret_key
     csrf.init_app(app)
+
+    user = User(username="", password=generate_password_hash(password))
+
+    @auth.verify_password
+    def verify_password(username, password) -> bool:
+        return check_password_hash(user.password, password)
 
     # TODO: Add middleware logging for IP, time, user agent details, highlighting on 404s etc.
     # log = logging.getLogger("werkzeug")

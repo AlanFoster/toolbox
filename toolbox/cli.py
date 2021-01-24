@@ -44,6 +44,12 @@ def cli():
     "-v", "--verbose", is_flag=True, default=False, help="Enable verbose logging"
 )
 @click.option(
+    "--password",
+    required=True,
+    default=None,
+    help="A password is required to authenticate. There is no username.",
+)
+@click.option(
     "-p",
     "--port",
     type=click.INT,
@@ -52,13 +58,14 @@ def cli():
     help="the port to serve from",
 )
 @click.argument("root_user_directory", required=True, callback=validate_directory)
-def serve(host, port, debug, reload, verbose, root_user_directory):
+def serve(host, port, password, debug, reload, verbose, root_user_directory):
     root_toolbox_directory = Path(__file__).parent.parent
 
     server.serve(
         host=host,
         port=port,
         verbose=verbose,
+        password=password,
         root_toolbox_directory=root_toolbox_directory,
         root_user_directory=root_user_directory,
         config_path=Path(__file__).parent / "config.json",
