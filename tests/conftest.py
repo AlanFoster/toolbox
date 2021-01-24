@@ -1,5 +1,5 @@
 import pytest
-from toolbox.server import server
+from toolbox.server import make_app
 from pathlib import Path
 from flask import Flask
 from http import HTTPStatus
@@ -31,11 +31,11 @@ def app():
     app.config["ROOT_USER_DIRECTORY"] = test_harness / "serve"
     app.config["ROOT_TOOLBOX_DIRECTORY"] = test_harness / "toolbox"
     app.config["CONFIG_PATH"] = test_harness / "toolbox" / "config.json"
-    app.register_blueprint(server.server)
+    app.register_blueprint(make_app.server)
 
     secret_key = secrets.token_bytes(32)
     app.secret_key = secret_key
-    server.csrf.init_app(app)
+    make_app.csrf.init_app(app)
 
     @app.route("/csrf_token", methods=["GET"])
     def csrf_token():
