@@ -182,6 +182,9 @@ def index(server_path):
         return response
 
     if isinstance(server_response, ServerDirectoryListing):
+        formdata = session.get("formdata")
+        upload_form = UploadTokenForm(data=formdata)
+
         upload_token = upload_tokens.get(session.get("upload_token_id"))
         session.pop("upload_token_id", None)
         return render_template(
@@ -189,7 +192,7 @@ def index(server_path):
             view_model=IndexViewModel(
                 payload_generator=payload_generator,
                 directory_listing=server_response,
-                upload_token_form=UploadTokenForm(),
+                upload_token_form=upload_form,
                 upload_token=upload_token,
             ),
         )
@@ -216,9 +219,8 @@ def create_token():
         )
         upload_tokens[upload_token.id] = upload_token
         session["upload_token_id"] = upload_token.id
-    else:
-        return redirect(url_for("serve.index"))
 
+    session["formdata"] = request.form
     return redirect(url_for("serve.index"))
 
 
