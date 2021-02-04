@@ -43,7 +43,7 @@
             <li>{{ error }}</li>
         {% endfor %}
 
-        <form method="POST" class="form" action="{{ url_for('serve.index') }}">
+        <form method="POST" class="form" action="{{ url_for('serve.create_token') }}">
             {{ form.csrf_token }}
             <div class="form-group row">
                 <label for="inputPassword3" class="col-sm-2 col-form-label">
@@ -59,7 +59,9 @@
                     {{ form.file_name(size=20, class_='form-control', placeholder="some_file.txt") }}
                 </div>
               </div>
-            <button type="submit" class="btn btn-outline-primary">Create</button>
+            <button type="submit" class="btn btn-outline-primary">
+                Create
+            </button>
             <a
                 class="btn btn-outline-secondary"
                 data-toggle="collapse"

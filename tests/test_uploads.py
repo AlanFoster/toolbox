@@ -31,9 +31,10 @@ def extract_token_id(response, file_name):
 def test_upload_token_creation(app, client, req_ctx):
     csrf_token = client.get("/csrf_token").data.decode("utf-8")
     response = client.post(
-        "/",
+        "/tokens",
         content_type="application/x-www-form-urlencoded",
         data=dict(csrf_token=csrf_token, file_name="test_upload_file.txt"),
+        follow_redirects=True,
     )
 
     assert response.status_code == HTTPStatus.OK
@@ -51,9 +52,10 @@ def test_upload_token_creation_missing_csrf_token(
     csrf_token, expected_data, app, client, req_ctx
 ):
     response = client.post(
-        "/",
+        "/tokens",
         content_type="application/x-www-form-urlencoded",
         data=dict(csrf_token=csrf_token, file_name="test_upload_file.txt"),
+        follow_redirects=True,
     )
 
     assert response.status_code == HTTPStatus.BAD_REQUEST
@@ -75,9 +77,10 @@ def test_upload_file(mocker: MockerFixture, app, client, req_ctx):
     file_manager_open_stub = mocker.patch("toolbox.server.file_manager.open", mock_open)
     csrf_token = client.get("/csrf_token").data.decode("utf-8")
     response = client.post(
-        "/",
+        "/tokens",
         content_type="application/x-www-form-urlencoded",
         data=dict(csrf_token=csrf_token, file_name="test_upload_file.txt"),
+        follow_redirects=True,
     )
 
     token_id = extract_token_id(response, file_name="./test_upload_file.txt")
@@ -118,9 +121,10 @@ def test_local_file_inclusion(mocker: MockerFixture, app, client, req_ctx, file_
     file_manager_open_stub = mocker.patch("toolbox.server.file_manager.open", mock_open)
     csrf_token = client.get("/csrf_token").data.decode("utf-8")
     response = client.post(
-        "/",
+        "/tokens",
         content_type="application/x-www-form-urlencoded",
         data=dict(csrf_token=csrf_token, file_name=file_name),
+        follow_redirects=True,
     )
 
     token_id = extract_token_id(response, file_name=f"./{file_name}")

@@ -85,10 +85,10 @@ csrf = CSRFProtect()
 auth = HTTPBasicAuth()
 
 
+# No login required - shells can be accessed from anywhere
 @server.route("/shells/<name>")
 @server.route("/shells/<name>/<lport>")
 @server.route("/shells/<name>/<lhost>/<lport>")
-@auth.login_required
 def shell(name: str, lhost: Optional[str] = None, lport: Optional[str] = None):
     payload_generator = PayloadGenerator()
     payload = payload_generator.generate(name=name, lhost=lhost, lport=lport)
@@ -99,6 +99,7 @@ def shell(name: str, lhost: Optional[str] = None, lport: Optional[str] = None):
     return response
 
 
+# No login required - debugging can be accessed from anywhere
 @server.route("/debug/", defaults={"namespace": None})
 @server.route("/debug/<path:namespace>")
 def debug(namespace):
@@ -114,6 +115,7 @@ def debug(namespace):
     return make_response("", HTTPStatus.OK)
 
 
+# No login required - uploads must provide a one time token
 @server.route("/uploads", methods=["POST"])
 @csrf.exempt
 def uploads():
@@ -153,9 +155,9 @@ def uploads():
     return make_response(upload_form.errors, HTTPStatus.BAD_REQUEST)
 
 
-@server.route("/", defaults={"server_path": ""}, methods=["GET", "POST"])
-@server.route("/<path:server_path>", methods=["GET", "POST"])
-@auth.login_required
+# No Login required - The root index is accessible so that it can easily serve arbitrary files
+@server.route("/", defaults={"server_path": ""}, methods=["GET"])
+@server.route("/<path:server_path>", methods=["GET"])
 def index(server_path):
     payload_generator = PayloadGenerator()
     file_manager = FileManager(
@@ -180,15 +182,8 @@ def index(server_path):
         return response
 
     if isinstance(server_response, ServerDirectoryListing):
-        form = UploadTokenForm()
-        upload_token = None
-        if form.validate_on_submit():
-            upload_token = UploadToken(
-                id=secrets.token_hex(16),
-                file_name=form.file_name.data,
-            )
-            upload_tokens[upload_token.id] = upload_token
-
+        upload_token = upload_tokens.get(session.get("upload_token_id"))
+        session.pop("upload_token_id", None)
         return render_template(
             "views/index.html",
             view_model=IndexViewModel(
@@ -200,6 +195,31 @@ def index(server_path):
         )
 
     return abort(HTTPStatus.INTERNAL_SERVER_ERROR, f"{str(server_response.__class__)}")
+
+
+# No login required - simply redirects to the index page
+@server.route("/tokens", methods=["GET"])
+def redirected():
+    return redirect(url_for("serve.index"))
+
+
+# Login required - this page can generate upload tokens
+@auth.login_required
+@server.route("/tokens", methods=["POST"])
+def create_token():
+    form = UploadTokenForm()
+    upload_token = None
+    if form.validate_on_submit():
+        upload_token = UploadToken(
+            id=secrets.token_hex(16),
+            file_name=form.file_name.data,
+        )
+        upload_tokens[upload_token.id] = upload_token
+        session["upload_token_id"] = upload_token.id
+    else:
+        return redirect(url_for("serve.index"))
+
+    return redirect(url_for("serve.index"))
 
 
 def make_app(
