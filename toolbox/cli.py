@@ -25,7 +25,6 @@ def validate_directory(ctx, param, value):
 def cli():
     pass
 
-
 @cli.command()
 @click.option("--host", default="0.0.0.0", help="Host to bind on")
 @click.option(
@@ -45,9 +44,9 @@ def cli():
 )
 @click.option(
     "--password",
-    required=True,
+    required=False,
     default=None,
-    help="A password is required to authenticate. There is no username.",
+    help="A password is required to upload files. There is no username.",
 )
 @click.option(
     "-p",

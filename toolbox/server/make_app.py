@@ -66,10 +66,11 @@ class IndexViewModel:
     directory_listing: ServerDirectoryListing
     upload_token_form: UploadForm
     upload_token: UploadToken
+    has_uploads_enabled: bool
 
 
 @dataclass
-class User:
+class Credentials:
     username: str
     password: str
 
@@ -194,6 +195,7 @@ def index(server_path):
                 directory_listing=server_response,
                 upload_token_form=upload_form,
                 upload_token=upload_token,
+                has_uploads_enabled=current_app.config["HAS_UPLOADS_ENABLED"],
             ),
         )
 
@@ -244,15 +246,23 @@ def make_app(
     app.config["ROOT_USER_DIRECTORY"] = root_user_directory
     app.config["CONFIG_PATH"] = config_path
     app.config["TEMPLATES_AUTO_RELOAD"] = use_reloader
+    app.config["HAS_UPLOADS_ENABLED"] = password is not None
     secret_key = secrets.token_bytes(32)
     app.secret_key = secret_key
     csrf.init_app(app)
 
-    user = User(username="", password=generate_password_hash(password))
+    if password:
+        credentials = Credentials(
+            username="", password=generate_password_hash(password)
+        )
+    else:
+        credentials = None
 
     @auth.verify_password
     def verify_password(username, password) -> bool:
-        return check_password_hash(user.password, password)
+        if credentials is None:
+            return False
+        return check_password_hash(credentials.password, password)
 
     # TODO: Add middleware logging for IP, time, user agent details, highlighting on 404s etc.
     # log = logging.getLogger("werkzeug")

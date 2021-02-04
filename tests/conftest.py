@@ -31,6 +31,7 @@ def app():
     app.config["ROOT_USER_DIRECTORY"] = test_harness / "serve"
     app.config["ROOT_TOOLBOX_DIRECTORY"] = test_harness / "toolbox"
     app.config["CONFIG_PATH"] = test_harness / "toolbox" / "config.json"
+    app.config["HAS_UPLOADS_ENABLED"] = True
     app.register_blueprint(make_app.server)
 
     secret_key = secrets.token_bytes(32)

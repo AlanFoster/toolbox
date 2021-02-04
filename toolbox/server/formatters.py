@@ -3,7 +3,7 @@ from datetime import datetime
 
 
 def pretty_date(date, now=None):
-    if now ==None:
+    if now == None:
         now = datetime.now()
     difference = now - date
 
