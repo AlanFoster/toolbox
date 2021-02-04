@@ -207,8 +207,8 @@ def redirected():
 
 
 # Login required - this page can generate upload tokens
-@auth.login_required
 @server.route("/tokens", methods=["POST"])
+@auth.login_required
 def create_token():
     form = UploadTokenForm()
     upload_token = None
