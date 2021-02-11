@@ -74,6 +74,8 @@ class Credentials:
     username: str
     password: str
 
+class ToolboxServerException(Exception):
+    pass
 
 upload_tokens: Dict[UploadTokenId, UploadToken] = {}
 
@@ -226,6 +228,26 @@ def create_token():
     return redirect(url_for("serve.index"))
 
 
+def validate_app(app):
+    file_manager = FileManager(
+        root_user_directory=app.config["ROOT_USER_DIRECTORY"],
+        root_toolbox_directory=app.config["ROOT_TOOLBOX_DIRECTORY"],
+    )
+
+    try:
+        ServerConfig(
+            root_toolbox_directory=app.config["ROOT_TOOLBOX_DIRECTORY"],
+            #  TODO: Remove config path and assume only built in files can be mapped
+            config_path=app.config["CONFIG_PATH"],
+            file_manager=file_manager,
+        )
+    except ValueError as e:
+        raise ToolboxServerException(
+            f"{str(e)}\nConfiguration problem occurred. Ensure that {Color.green('git submodule update --init --recursive')} has been run."
+        )
+
+    return True
+
 def make_app(
     verbose,
     host,
@@ -270,5 +292,6 @@ def make_app(
 
     app.logger.setLevel(logging.INFO)
     app.register_blueprint(server)
+    validate_app(app)
 
     return app
