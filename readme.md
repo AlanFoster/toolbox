@@ -1,5 +1,11 @@
 # toolbox
 
+Currently toolbox provides functionality similar to `python3 -m http.server`, it will:
+
+- Serve the files within the provided directory
+- Serve common CTF tools, such as linpeas.sh and static binaries
+- Serve payload/shell generation
+
 ## Installing
 
 ```
