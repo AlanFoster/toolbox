@@ -25,6 +25,140 @@ def validate_directory(ctx, param, value):
 def cli():
     pass
 
+import selectors
+from queue import Queue
+
+sel = selectors.DefaultSelector()
+
+import code
+import readline
+import rlcompleter
+
+
+# TODO List:
+#   - Readline / history support
+#   - upload / download file functionality
+#   - Being able to kill a program without... killing a program
+
+# https://sites.google.com/site/xiangyangsite/home/technical-tips/software-development/python/python-readline-completions
+def completer(text, state):
+    try:
+        available = [
+            "eyoo",
+            "eyo",
+            "eyooo2",
+            "foo",
+            "foobar",
+            "foobarbaz",
+            "qux"
+        ]
+        elements = [x for x in available if x.startswith(text)]
+
+        if state >= len(elements):
+            return None
+
+        # print(f"text={text} state={state}")
+        return elements[state]
+    except Exception as e:
+        print(e)
+
+import threading
+import socket
+import selectors
+import sys
+from queue import Queue
+
+@cli.command()
+@click.option("--host", default="0.0.0.0", help="Host to bind on")
+@click.option(
+    "-p",
+    "--port",
+    type=click.INT,
+    required=True,
+    callback=validate_port_permissions,
+    help="the port to serve from",
+)
+def listener(host, port):
+    write_queue = Queue()
+    socket_listener_thread = threading.Thread(target=socket_listener_thread_loop, args=(host, port, write_queue))
+    socket_listener_thread.start()
+
+    while True:
+        readline.parse_and_bind("tab: complete")
+        readline.parse_and_bind("set editing-mode emacs")
+        readline.set_completer(completer)
+
+        line = input("> ")
+        if line == "quit":
+            break
+
+        write_queue.put(f"{line}\n")
+
+    # while True:
+    #     # result = sys.stdin.readline()
+    #     # print(result)
+
+    #     line = input("Prompt ('stop' to quit): ")
+    #     if line == "quit":
+    #         break
+
+    #     print(f"entered {line}")
+
+    # vars = globals()
+    # vars.update(locals())
+
+    # readline.set_completer(rlcompleter.Completer(vars).complete)
+    # readline.parse_and_bind("tab: complete")
+    # code.InteractiveConsole(vars).interact()
+
+def socket_listener_thread_loop(host, port, write_queue):
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    sock.bind((host, port))
+    sock.setblocking(False)
+
+    listener_backlog = 1
+    sock.listen(listener_backlog)
+
+    sel.register(sock, selectors.EVENT_READ | selectors.EVENT_WRITE, (accept, write_queue,))
+    # sel.register(sys.stdin, selectors.EVENT_READ, handle_user_input)
+
+    while True:
+        events = sel.select()
+        for key, mask in events:
+            callback, write_queue = key.data
+            callback((key.fileobj, write_queue), mask)
+    # shutdown
+    # sel.unregister()
+
+def accept(data, mask):
+    sock, write_queue = data
+    conn, addr = sock.accept()
+    print('accepted', conn, 'from', addr)
+    conn.setblocking(False)
+    sel.register(conn, selectors.EVENT_READ | selectors.EVENT_WRITE, (handle_shell_update, write_queue,))
+
+def handle_shell_update(data, mask):
+    conn, write_queue = data
+
+    if mask & selectors.EVENT_READ:
+        data = conn.recv(1000)
+        if data:
+            print(data.decode(encoding="utf-8"))
+        else:
+            print('closing', conn)
+            sel.unregister(conn)
+            conn.close()
+    if mask & selectors.EVENT_WRITE:
+        if not write_queue.empty():
+            message = write_queue.get()
+
+            conn.sendall(message.encode(encoding="utf-8"))
+
+# def handle_user_input(stream, mask):
+#     if mask & selectors.EVENT_READ:
+#         write_queue.append(stream.readline())
+
 @cli.command()
 @click.option("--host", default="0.0.0.0", help="Host to bind on")
 @click.option(
