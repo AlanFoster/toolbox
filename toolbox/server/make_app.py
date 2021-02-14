@@ -74,8 +74,10 @@ class Credentials:
     username: str
     password: str
 
+
 class ToolboxServerException(Exception):
     pass
+
 
 upload_tokens: Dict[UploadTokenId, UploadToken] = {}
 
@@ -247,6 +249,7 @@ def validate_app(app):
         )
 
     return True
+
 
 def make_app(
     verbose,

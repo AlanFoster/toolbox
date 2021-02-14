@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Optional
 from pathlib import Path
 from .interfaces import get_ip_address, is_valid_ipv4_address, allowed_interfaces
-
+from urllib.parse import urlparse
 
 TEMPLATE_DIRECTORY = Path(__file__).parent / "templates"
 MODULE_DIRECTORY = TEMPLATE_DIRECTORY / "modules"
@@ -25,6 +25,8 @@ MODULE_DIRECTORY = TEMPLATE_DIRECTORY / "modules"
 class DataStore:
     lhost: str
     lport: int
+    srvhost_domain: str
+    srvhost_port: str
     srvhost_url: str
 
 
@@ -69,10 +71,15 @@ class PayloadGenerator:
         )
 
     def _get_datastore(self, lhost: Optional[str], lport: Optional[str]) -> DataStore:
+        srvhost_url = request.host_url
+        srvhost_parsed = urlparse(srvhost_url)
+
         return DataStore(
             lhost=(lhost if lhost else self.default_lhost),
             lport=(int(lport) if lport else self.default_lport),
-            srvhost_url=request.host_url,
+            srvhost_domain=srvhost_parsed.hostname,
+            srvhost_port=srvhost_parsed.port,
+            srvhost_url=srvhost_url,
         )
 
     def _get_lhost(self, lhost: Optional[str]) -> str:

