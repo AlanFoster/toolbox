@@ -17,6 +17,10 @@
         "local_path": "third_party/static-binaries/binaries/linux/x86_64/socat"
       },
       {
+        "server_path": "/ncat.exe",
+        "local_path": "third_party/static-binaries/binaries/windows/x86/ncat.exe"
+      },
+      {
         "server_path": "/static",
         "local_path": "third_party/static-binaries/binaries"
       }
