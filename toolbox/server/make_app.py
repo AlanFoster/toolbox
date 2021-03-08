@@ -15,7 +15,6 @@ import logging
 import base64
 from typing import Optional
 from http import HTTPStatus
-import netifaces
 from flask_wtf.csrf import CSRFProtect
 from .file_server import (
     ServerConfig,

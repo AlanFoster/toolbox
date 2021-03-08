@@ -2,13 +2,19 @@ import click
 from toolbox import __version__
 from toolbox.server import server
 
-from os import geteuid, path
+from os import path
 from pathlib import Path
 
 
 def validate_port_permissions(ctx, param, value):
-    if value < 1024 and geteuid() != 0:
-        raise click.BadParameter(f"sudo permission required to bind to port '{value}'")
+    try:
+        # Windows doesn't have geteuid available and raises ImportError
+        from os import geteuid
+        if value < 1024 and geteuid() != 0:
+            raise click.BadParameter(f"sudo permission required to bind to port '{value}'")
+    except ImportError:
+        pass
+
     return value
 
 

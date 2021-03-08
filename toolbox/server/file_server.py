@@ -12,7 +12,6 @@ from flask import (
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
-import netifaces
 import json
 from pathlib import Path
 from typing import List, Mapping, Union

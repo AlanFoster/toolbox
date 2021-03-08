@@ -10,7 +10,7 @@ snapshottest = "==0.5.1"
 
 [packages]
 click = "==7.1.2"
-netifaces = "==0.10.9"
+netifaces = { version="==0.10.9", sys_platform = "!= 'win32'" }
 flask = "==1.1.2"
 flask-wtf = "0.14.3"
 pytest-mock = "*"
