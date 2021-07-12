@@ -1,6 +1,5 @@
 #!/bin/sh
 
-set -xuf -o pipefail
 
 mkdir /tmp/cgrp && mount -t cgroup -o rdma cgroup /tmp/cgrp && mkdir /tmp/cgrp/x
 echo 1 > /tmp/cgrp/x/notify_on_release
