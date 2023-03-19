@@ -7,3 +7,6 @@
 [submodule "third_party/static-binaries"]
 	path = third_party/static-binaries
 	url = https://github.com/andrew-d/static-binaries
+[submodule "third_party/SharpCollection"]
+	path = third_party/SharpCollection
+	url = https://github.com/Flangvik/SharpCollection.git

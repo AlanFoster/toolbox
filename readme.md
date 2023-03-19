@@ -3,7 +3,10 @@
 Currently toolbox provides functionality similar to `python3 -m http.server`, it will:
 
 - Serve the files within the provided directory
-- Serve common CTF tools, such as linpeas.sh and static binaries
+- Serve common CTF tools, such as:
+  - [linpeas / winpeas](https://github.com/carlospolop/privilege-escalation-awesome-scripts-suite.git) - Enumeration scripts for priv esc
+  - [static-binaries](https://github.com/andrew-d/static-binaries) - compiled tools such as ncat/socat/nmap/etc
+  - [SharpCollection](https://github.com/Flangvik/SharpCollection) - Nightly builds of common C# offensive tools
 - Serve payload/shell generation
 
 ## Installing
@@ -16,7 +19,7 @@ Install the dependencies:
 ```
 cd toolbox
 git submodule update --init --recursive
-pip3 install -r requirements.txt
+python3 -m pip install -r requirements.txt
 ```
 
 Verify it works:
@@ -52,6 +55,7 @@ The server will:
 Usage:
 
 ```
+# Remember to follow the installing steps first - i.e. with pip install above
 python3 toolbox.py serve -p 8000 .
 ```
 

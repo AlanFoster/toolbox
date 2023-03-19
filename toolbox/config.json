@@ -27,6 +27,10 @@
       {
         "server_path": "/static",
         "local_path": "third_party/static-binaries/binaries"
+      },
+      {
+        "server_path": "/SharpCollection",
+        "local_path": "third_party/SharpCollection"
       }
     ]
   }
