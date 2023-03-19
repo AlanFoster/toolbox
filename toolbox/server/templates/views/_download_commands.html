@@ -11,10 +11,11 @@
       <div class="modal-body">
         <h4>HTTP</h4>
         Download commands using HTTP:
-        <pre><code>
+        <pre class="raw-snippet d-none"><code>
 # Linux
 curl {{file.url}} &gt; {{file.name}}
 wget -O {{file.name}} {{file.url}}
+python3 -c 'r=__import__("urllib.request").request.urlopen("{{file.url}}");open("{{file.name}}","wb").write(r.read())'
 
 # Windows
 certutil -urlcache -f {{file.url}} {{file.name}}
@@ -23,7 +24,7 @@ Invoke-WebRequest -uri {{file.url}} -OutFile {{file.name}}
 
       <h4>SMB</h4>
       Download commands using SMB:
-      <pre><code>
+      <pre class="raw-snippet d-none"><code>
 # Run server_path
 python3 ~/impacket/examples/smbserver.py -ip {{ip}} my_share .
 

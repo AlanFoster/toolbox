@@ -15,16 +15,22 @@ $(document).ready(function(){
         var urlBase = location.protocol + '//' + location.host;
         var url = urlBase + buttonTrigger.data("path");
         var filename = url.split("/").pop()
-        var ip = location.host.split(":")[0]    ;
+        var ip = location.host.split(":")[0];
 
-        $(this).find("pre").each(function () {
+        // Copy the raw example snippet text, substitute variables, and create a sibling node with the rendered text
+        $(this).find(".raw-snippet").each(function () {
             var $this = $(this);
-            var text = $this.text();
-            var newText = text
+            var exampleText = $this.text();
+            var renderedText = exampleText
                 .replaceAll("{{file.url}}", url)
                 .replaceAll("{{file.name}}", filename)
                 .replaceAll("{{ip}}", ip);
-            $this.text(newText);
+            var $renderedExample = $this.next();
+            if (!$renderedExample || !$renderedExample.hasClass('rendered')) {
+                $renderedExample = $("<pre class='rendered'/>");
+                $renderedExample.insertAfter($this);
+            }
+            $renderedExample.text(renderedText)
         });
     });
 });
