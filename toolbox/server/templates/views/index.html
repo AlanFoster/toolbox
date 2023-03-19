@@ -7,15 +7,39 @@
     <script src="{{ url_for('static', filename='popper-1.16.1.min.js')}}" integrity="sha384-9/reFTGAW83EW2RDu2S0VKaIzap3H66lZH81PoYlFhbGU+6BZp6G7niu735Sk7lN" crossorigin="anonymous"></script>
     <script src="{{ url_for('static', filename='bootstrap-4.5.3.min.js')}}" integrity="sha384-w1Q4orYjBQndcko6MimVbzY0tgp4pWB4lZ7lr30WKz0vr/aWKhXdBNmNb5D92v7s" crossorigin="anonymous"></script>
 </head>
+{%- raw %}
+<script>
+$(document).ready(function(){
+    $("#commands-modal").on("show.bs.modal", function(event){
+        var buttonTrigger = $(event.relatedTarget);
+        var urlBase = location.protocol + '//' + location.host;
+        var url = urlBase + buttonTrigger.data("path");
+        var filename = url.split("/").pop()
+        var ip = location.host.split(":")[0]    ;
+
+        $(this).find("pre").each(function () {
+            var $this = $(this);
+            var text = $this.text();
+            var newText = text
+                .replaceAll("{{file.url}}", url)
+                .replaceAll("{{file.name}}", filename)
+                .replaceAll("{{ip}}", ip);
+            $this.text(newText);
+        });
+    });
+});
+</script>
+{%- endraw %}
 <body>
 
 <main role="main" class="container mt-3">
     <h2>Directory listing for /{{server_path}}</h2>
     <hr />
 
-    {% include 'views/_upload_form.html' %}
+    {%- include 'views/_upload_form.html' -%}
+    {%- include 'views/_download_commands.html' -%}
 
-    {% with files=view_model.directory_listing.user_files %}
+    {%- with files=view_model.directory_listing.user_files %}
         {% include "views/_directory_list.html" %}
     {% endwith %}
 
