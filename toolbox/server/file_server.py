@@ -167,7 +167,7 @@ class UserFileServer:
                         local_path=child_path,
                     )
                 )
-            files.sort(key=lambda file: file.name)
+            files.sort(key=lambda file: (file.is_file, file.name))
 
             return ServerDirectoryListing(
                 user_files=files,
@@ -183,7 +183,8 @@ class UserFileServer:
             toolbox_files.append(
                 as_server_directory_item(server_path=server_path, local_path=local_path)
             )
-        toolbox_files.sort(key=lambda file: file.name)
+        toolbox_files.sort(key=lambda file: (file.is_file, file.name))
+
         return toolbox_files
 
     def _read_user_file(self, local_path: LocalPath):
