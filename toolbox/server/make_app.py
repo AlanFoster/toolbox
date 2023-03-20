@@ -244,7 +244,7 @@ def validate_app(app):
         )
     except ValueError as e:
         raise ToolboxServerException(
-            f"{str(e)}\nConfiguration problem occurred. Ensure that {Color.green('git submodule update --init --recursive')} has been run."
+            f"{str(e)}\nConfiguration problem occurred. Ensure that {Color.green('install.sh')} has been run."
         )
 
     return True

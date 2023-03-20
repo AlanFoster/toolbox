@@ -18,8 +18,7 @@ git clone https://github.com/AlanFoster/toolbox.git
 Install the dependencies:
 ```
 cd toolbox
-git submodule update --init --recursive
-python3 -m pip install -r requirements.txt
+./install.sh
 ```
 
 Verify it works:
@@ -55,7 +54,7 @@ The server will:
 Usage:
 
 ```
-# Remember to follow the installing steps first - i.e. with pip install above
+# Remember to follow the installing steps first - i.e. with install.sh above
 python3 toolbox.py serve -p 8000 .
 ```
 

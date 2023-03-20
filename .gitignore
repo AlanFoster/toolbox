@@ -2,4 +2,5 @@ __pycache__/
 *.pyc
 build
 dist
+third_party/PEASS-ng
 *.egg-info

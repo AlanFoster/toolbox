@@ -6,15 +6,15 @@
       },
       {
         "server_path": "/linpeas.sh",
-        "local_path": "third_party/privilege-escalation-awesome-scripts-suite/linPEAS/linpeas.sh"
+        "local_path": "third_party/PEASS-ng/linpeas.sh"
       },
       {
         "server_path": "/winpeas.bat",
-        "local_path": "third_party/privilege-escalation-awesome-scripts-suite/winPEAS/winPEASbat/winPEAS.bat"
+        "local_path": "third_party/PEASS-ng/winPEAS.bat"
       },
       {
         "server_path": "/winpeas.exe",
-        "local_path": "third_party/privilege-escalation-awesome-scripts-suite/winPEAS/winPEASexe/binaries/Release/winPEASany.exe"
+        "local_path": "third_party/PEASS-ng/winPEASany.exe"
       },
       {
         "server_path": "/socat",
