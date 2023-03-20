@@ -27,7 +27,7 @@ $(document).ready(function(){
                 .replaceAll("{{ip}}", ip);
             var $renderedExample = $this.next();
             if (!$renderedExample || !$renderedExample.hasClass('rendered')) {
-                $renderedExample = $("<pre class='rendered'/>");
+                $renderedExample = $("<pre class='rendered' style='white-space: pre-wrap'/>");
                 $renderedExample.insertAfter($this);
             }
             $renderedExample.text(renderedText)
