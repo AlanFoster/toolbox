@@ -4,7 +4,7 @@ from pathlib import Path
 from flask import Flask
 from http import HTTPStatus
 import secrets
-from flask_wtf.csrf import CSRFError, CSRFProtect, CsrfProtect, generate_csrf
+from flask_wtf.csrf import CSRFError, CSRFProtect, generate_csrf
 
 
 # Open the given response in a browser to inspect the rendered html

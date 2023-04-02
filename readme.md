@@ -141,7 +141,7 @@ Updating `pipenv` currently requires a manual change to `requirements.txt`.
 This file will not contain dev-dependencies and is meant for end-users.
 
 ```
-pipenv lock -r > requirements.txt
+pipenv requirements > requirements.txt
 ```
 
 ### Adding additional tools
